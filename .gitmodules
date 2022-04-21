@@ -24,4 +24,4 @@
 	url = https://github.com/wuxiaohua1011/roar_waypoint
 [submodule "src/Lane_Detection_ROAR"]
 	path = src/Lane_Detection_ROAR
-	url = https://github.com/amansrf/Lane_Detection_ROAR.git
+	url = https://github.com/wuxiaohua1011/Lane_Detection_ROAR.git
