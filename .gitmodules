@@ -22,3 +22,6 @@
 [submodule "src/roar_waypoint"]
 	path = src/roar_waypoint
 	url = https://github.com/wuxiaohua1011/roar_waypoint
+[submodule "src/Lane_Detection_ROAR"]
+	path = src/Lane_Detection_ROAR
+	url = https://github.com/amansrf/Lane_Detection_ROAR.git
