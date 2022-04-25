@@ -1,6 +1,3 @@
-[submodule "src/cone_detector_ros2"]
-	path = src/cone_detector_ros2
-	url = https://github.com/wuxiaohua1011/cone_detector_ros2
 [submodule "src/deep_sort_ros2"]
 	path = src/deep_sort_ros2
 	url = https://github.com/wuxiaohua1011/deep_sort_ros2
