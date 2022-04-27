@@ -22,6 +22,6 @@
 [submodule "src/Lane_Detection_ROAR"]
 	path = src/Lane_Detection_ROAR
 	url = https://github.com/wuxiaohua1011/Lane_Detection_ROAR.git
-[submodule "src/image_pointcloud_detection"]
-	path = src/image_pointcloud_detection
-	url = https://github.com/airacingtech/image_pointcloud_detection.git
+[submodule "src/cone_detector_ros2"]
+	path = src/cone_detector_ros2
+	url = https://github.com/wuxiaohua1011/cone_detector_ros2.git
