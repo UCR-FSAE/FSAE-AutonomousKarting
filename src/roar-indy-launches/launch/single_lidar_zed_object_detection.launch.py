@@ -92,6 +92,8 @@ def generate_launch_description():
             "rgb_camera_topic": "/zed2i/center_zed2i/left/image_rect_color",
             "rgb_camera_info_topic": "/zed2i/center_zed2i/left/camera_info",
             "lidar_topics": "[/livox/lidar]",
+            "confidence_threshold": "0.1",
+            "rgb_camera_frame_id": "zed2i_left_camera_frame",
         }.items(),
     )
 

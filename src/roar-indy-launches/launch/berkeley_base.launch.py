@@ -13,13 +13,6 @@ def generate_launch_description():
     base_path: Path = Path(get_package_share_directory("roar-indy-launches"))
     rviz_path = base_path / "config" / "berkeley_base.rviz"
 
-    rviz_node = launch_ros.actions.Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="screen",
-        arguments=["-d", rviz_path.as_posix()],
-    )
     robot_state_node = launch.actions.IncludeLaunchDescription(
         launch.launch_description_sources.PythonLaunchDescriptionSource(
             os.path.join(
