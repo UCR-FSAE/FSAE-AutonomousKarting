@@ -96,5 +96,11 @@ def generate_launch_description():
     )
 
     return launch.LaunchDescription(
-        [rviz_node, robot_state_node, center_lidar_node, zed_node, cone_detector_node]
+        [
+            rviz_node,
+            robot_state_node,
+            center_lidar_node,
+            zed_node,
+            launch.actions.TimerAction(period=1.0, actions=[cone_detector_node]),
+        ]
     )
