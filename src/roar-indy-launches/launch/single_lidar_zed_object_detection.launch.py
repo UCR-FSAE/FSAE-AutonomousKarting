@@ -81,7 +81,7 @@ def generate_launch_description():
         ],
     )
 
-    zed_node = IncludeLaunchDescription(
+    cone_detector_node = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource(
             [
                 get_package_share_directory("cone_detector_ros2"),
@@ -96,5 +96,5 @@ def generate_launch_description():
     )
 
     return launch.LaunchDescription(
-        [rviz_node, robot_state_node, center_lidar_node, zed_node]
+        [rviz_node, robot_state_node, center_lidar_node, zed_node, cone_detector_node]
     )
