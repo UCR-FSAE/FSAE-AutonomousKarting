@@ -19,7 +19,7 @@ def generate_launch_description():
             {"xfer_format": 0},
             {"multi_topic": 1},
             {"data_src": 0},
-            {"publish_freq": 10.0},
+            {"publish_freq": 30.0},
             {"output_data_type": 0},
             {"frame_id": "center_lidar"},
             {"cmdline_input_bd_code": "1HDDH1200100591"},
