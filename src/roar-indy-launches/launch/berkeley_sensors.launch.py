@@ -41,63 +41,13 @@ def generate_launch_description():
             "cam_yaw": "0.0",
         }.items(),
     )
+    all_livox = IncludeLaunchDescription(
+        launch_description_source=PythonLaunchDescriptionSource(
+            [
+                get_package_share_directory("roar-indy-launches"),
+                "/launch/all_livox.launch.py",
+            ]
+        ),
+    )
 
-    left_lidar_config_path = (config_base / "left_livox_lidar_config.json").as_posix()
-    center_lidar_config_path = (
-        config_base / "center_livox_lidar_config.json"
-    ).as_posix()
-    right_lidar_config_path = (config_base / "right_livox_lidar_config.json").as_posix()
-
-    left_livox_lidar_node = Node(
-        package="livox_ros2_driver",
-        executable="livox_ros2_driver_node",
-        name="livox_lidar_left",
-        output="screen",
-        parameters=[
-            {"xfer_format": 0},
-            {"multi_topic": 1},
-            {"data_src": 0},
-            {"publish_freq": 10.0},
-            {"output_data_type": 0},
-            {"frame_id": "left_lidar"},
-            {"user_config_path": left_lidar_config_path},
-        ],
-    )
-    center_livox_lidar_node = Node(
-        package="livox_ros2_driver",
-        executable="livox_ros2_driver_node",
-        name="livox_lidar_center",
-        output="screen",
-        parameters=[
-            {"xfer_format": 0},
-            {"multi_topic": 1},
-            {"data_src": 0},
-            {"publish_freq": 10.0},
-            {"output_data_type": 0},
-            {"frame_id": "center_lidar"},
-            {"user_config_path": center_lidar_config_path},
-        ],
-    )
-    right_livox_lidar_node = Node(
-        package="livox_ros2_driver",
-        executable="livox_ros2_driver_node",
-        name="livox_lidar_right",
-        output="screen",
-        parameters=[
-            {"xfer_format": 0},
-            {"multi_topic": 1},
-            {"data_src": 0},
-            {"publish_freq": 10.0},
-            {"output_data_type": 0},
-            {"frame_id": "right_lidar"},
-            {"user_config_path": right_lidar_config_path},
-        ],
-    )
-    return launch.LaunchDescription(
-        [
-            zed_node,
-            # launch.actions.TimerAction(period=1.0, actions=[left_livox_lidar_node]),
-            launch.actions.TimerAction(period=1.0, actions=[center_livox_lidar_node]),
-            # launch.actions.TimerAction(period=1.0, actions=[right_livox_lidar_node]),
-        ]
-    )
+    return launch.LaunchDescription([zed_node, all_livox])

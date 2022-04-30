@@ -15,6 +15,10 @@ setup(
             glob("launch/*.launch.py"),
         ),
         (
+            os.path.join(os.path.join("share", package_name), "launch"),
+            glob("launch/livox/*.launch.py"),
+        ),
+        (
             os.path.join(os.path.join("share", package_name), "config"),
             glob("config/**/*", recursive=True),
         ),
