@@ -25,3 +25,6 @@
 [submodule "src/cone_detector_ros2"]
 	path = src/cone_detector_ros2
 	url = https://github.com/wuxiaohua1011/cone_detector_ros2.git
+[submodule "src/ros2_aruco"]
+	path = src/ros2_aruco
+	url = https://github.com/wuxiaohua1011/ros2_aruco
