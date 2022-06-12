@@ -1,9 +1,0 @@
-[submodule "src/indy_bot_urdf"]
-	path = src/indy_bot_urdf
-	url = https://github.com/wuxiaohua1011/indy_bot_urdf
-[submodule "src/roar_carla_ros2"]
-	path = src/roar_carla_ros2
-	url = https://github.com/wuxiaohua1011/roar_carla_ros2
-[submodule "src/roar_ground_plane_detector"]
-	path = src/roar_ground_plane_detector
-	url = https://github.com/wuxiaohua1011/roar_ground_plane_detector
