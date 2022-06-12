@@ -1,3 +1,13 @@
+# ROAR Indy WS
+
+This repo is the parent repo for the ROAR Go-Kart project. 
+
+## Clone only modules you need
+https://stackoverflow.com/questions/16728866/how-to-only-update-specific-git-submodules
+
+
+
+# Legacy Documentation
 # ROAR Indy collaboration repo. 
 This is the parent working directory for the ROAR indy collaboration. 
 
