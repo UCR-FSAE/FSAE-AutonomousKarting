@@ -7,3 +7,6 @@
 [submodule "src/agent"]
 	path = src/agent
 	url = https://gitlab.com/wuxiaohua1011/roar-indy-agent
+[submodule "src/roar-gokart-urdf"]
+	path = src/roar-gokart-urdf
+	url = https://github.com/wuxiaohua1011/roar-gokart-urdf
