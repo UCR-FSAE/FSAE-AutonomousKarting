@@ -9,7 +9,7 @@ def generate_launch_description():
     base_path = os.path.realpath(
         get_package_share_directory("roar-indy-launches")
     )  # also tried without realpath
-    rviz_path = base_path + "/config/all_sim.rviz"
+    rviz_path = base_path + "/config/sim_all.rviz"
 
     carla_client_node = launch.actions.IncludeLaunchDescription(
         launch.launch_description_sources.PythonLaunchDescriptionSource(
