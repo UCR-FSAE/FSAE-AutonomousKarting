@@ -10,6 +10,7 @@ def generate_launch_description():
         get_package_share_directory("roar-indy-launches")
     )  # also tried without realpath
     rviz_path = base_path + "/config/sim_all.rviz"
+    waypoint_file_path = base_path + "/config/eVGrandPrixWaypoints.txt"
 
     carla_client_node = launch.actions.IncludeLaunchDescription(
         launch.launch_description_sources.PythonLaunchDescriptionSource(
@@ -42,12 +43,39 @@ def generate_launch_description():
             )
         ),
     )
+    costmap_node = launch.actions.IncludeLaunchDescription(
+        launch.launch_description_sources.PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory("cost_map"),
+                "launch/costmap.launch.py",
+            )
+        ),
+    )
+
+    waypoint_publisher_node = launch.actions.IncludeLaunchDescription(
+        launch.launch_description_sources.PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory("roar_waypoint"),
+                "launch/waypoint_publisher.launch.py",
+            )
+        ),
+        launch_arguments={
+            "waypoint_file_path": launch.substitutions.LaunchConfiguration(
+                "waypoint_file_path"
+            )
+        }.items(),
+    )
     ld = launch.LaunchDescription(
         [
+            launch.actions.DeclareLaunchArgument(
+                name="waypoint_file_path", default_value=waypoint_file_path
+            ),
             carla_client_node,
             rviz_node,
             ground_plane_detector_node,
             cluster_extractor_node,
+            costmap_node,
+            waypoint_publisher_node,
         ]
     )
     return ld
