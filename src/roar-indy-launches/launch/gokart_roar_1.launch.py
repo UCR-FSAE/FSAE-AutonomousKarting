@@ -12,8 +12,8 @@ def generate_launch_description():
         get_package_share_directory("roar-indy-launches")
     ) )
 
-    gokart_roar_1: Path = Path("/config/gokart_roar_1/")
-    rviz_path:Path = base_path / gokart_roar_1 / "base.rviz"
+    gokart_roar_1: Path = Path("/config/")
+    rviz_path:Path = base_path / gokart_roar_1 / "gokart_roar_1.rviz"
 
     rviz_node = launch_ros.actions.Node(
         package="rviz2",
@@ -24,25 +24,26 @@ def generate_launch_description():
     )
 
     # vehicle description launch
+    urdf_file_path: Path = Path(get_package_share_directory("roar-gokart-urdf")) / "launch" / "state_publisher_no_rviz.launch.py"
+    assert urdf_file_path.exists()
     vehicle_urdf_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(
-                        get_package_share_directory("roar-gokart-urdf"),
-                        "state_publisher_no_rviz.launch.py",
-                    ))
+        PythonLaunchDescriptionSource(urdf_file_path.as_posix())
     )
     # LiDAR node
+    livox_file_path: Path = Path(get_package_share_directory("livox_ros2_driver")) / "launch" / "indy_livox_lidar.launch.py"
+    assert livox_file_path.exists()
     lidar_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(
-                        get_package_share_directory("livox_ros2_driver"),
-                        "gokart_roar_1.launch.py",
-                    )) # TODO: create 
+        PythonLaunchDescriptionSource(livox_file_path.as_posix()),
+        launch_arguments={
+                    "frame_id": "center_lidar",
+                }.items(),
+        
     )
     # ZED 
+    zed_file_path: Path = Path(get_package_share_directory("zed_wrapper")) / "launch" / "indy_zed2i_no_rviz.launch.py"
+    assert zed_file_path.exists()
     zed_launch =  IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(
-                        get_package_share_directory("zed_wrapper"),
-                        "gokart_roar_1.launch.py",
-                    )) 
+        PythonLaunchDescriptionSource(zed_file_path.as_posix()) 
     )
 
 
