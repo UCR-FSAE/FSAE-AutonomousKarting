@@ -2,6 +2,15 @@ from setuptools import setup
 import os
 from glob import glob
 
+
+def package_files(directory):
+    paths = []
+    for (path, directories, filenames) in os.walk(directory):
+        for filename in filenames:
+            paths.append(os.path.join(".", path, filename))
+    return paths
+
+
 package_name = "roar-indy-launches"
 setup(
     name=package_name,
@@ -20,7 +29,7 @@ setup(
         ),
         (
             os.path.join(os.path.join("share", package_name), "config"),
-            glob("config/**/*", recursive=True),
+            package_files("config"),
         ),
     ],
     install_requires=["setuptools"],

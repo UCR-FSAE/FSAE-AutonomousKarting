@@ -1,0 +1,8 @@
+{
+    "python.defaultInterpreterPath": "/usr/bin/python",
+    "python.autoComplete.extraPaths": [
+        "/home/michael/Desktop/projects/roar-indy-ws/install/roar-indy-launches/lib/python3.8/site-packages",
+        "/home/michael/Desktop/projects/roar-indy-ws/install/livox_interfaces/lib/python3.8/site-packages",
+        "/opt/ros/foxy/lib/python3.8/site-packages"
+    ]
+}
