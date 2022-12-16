@@ -6,6 +6,8 @@ from pathlib import Path
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 
+os.environ["RCUTILS_CONSOLE_OUTPUT_FORMAT"] = "{time}: [{name}] [{severity}]\t{message}"
+
 
 def generate_launch_description():
     base_path = Path(get_package_share_directory("roar-indy-launches"))
@@ -58,6 +60,20 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(zed_file_path.as_posix())
     )
 
+    septentrio_file_path: Path = (
+        Path(get_package_share_directory("septentrio_gnss_driver"))
+        / "launch"
+        / "rover_node.py"
+    )
+    assert septentrio_file_path.exists()
+    gps_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(septentrio_file_path.as_posix()),
+        launch_arguments={
+            "package_name": "roar-indy-launches",
+            "launch_file_name": "gokart_roar_1_septentrio_gps_config",
+        }.items(),
+    )
+
     ld = launch.LaunchDescription(
         [
             launch.actions.DeclareLaunchArgument(
@@ -74,6 +90,7 @@ def generate_launch_description():
             vehicle_urdf_launch,
             lidar_launch,
             zed_launch,
+            gps_launch,
         ]
     )
     return ld
