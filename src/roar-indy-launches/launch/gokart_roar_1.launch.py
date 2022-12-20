@@ -65,12 +65,19 @@ def generate_launch_description():
         / "launch"
         / "rover_node.py"
     )
+    septentrio_config_file_path: Path = (
+        Path(get_package_share_directory("septentrio_gnss_driver"))
+        / "launch"
+        / "config"
+        / "gokart_roar_1_septentrio_gps_config.yaml"
+    )
     assert septentrio_file_path.exists()
+    assert septentrio_config_file_path.exists()
     gps_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(septentrio_file_path.as_posix()),
         launch_arguments={
-            "package_name": "roar-indy-launches",
-            "launch_file_name": "gokart_roar_1_septentrio_gps_config",
+            "file_name": septentrio_config_file_path.file_name(),
+            "path_to_config": septentrio_config_file_path.as_posix(),
         }.items(),
     )
 
