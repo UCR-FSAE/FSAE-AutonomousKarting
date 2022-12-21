@@ -34,6 +34,7 @@ def generate_launch_description():
         output="screen",
         arguments=["-d", rviz_path.as_posix()],
     )
+    # TODO: seperate costmap related nodes into separate repo
     costmap_config_file_path: Path = (
         base_path / "config" / "gokart_carla_1_costmap2d_config.yaml"
     )
@@ -49,7 +50,7 @@ def generate_launch_description():
             ("voxel_grid", "/costmap/voxel_grid"),
             ("visualization_marker", "/costmap/voxel_grid/visualize"),
         ],
-    )
+    )  # this node is only used for visualization
     lifecycle_nodes = ["/costmap/costmap"]
     use_sim_time = True
     autostart = True
@@ -65,8 +66,33 @@ def generate_launch_description():
             {"node_names": lifecycle_nodes},
         ],
     )
+    pointcloud_to_laser = Node(
+        name="pointcloud_to_laserscan",
+        executable="pointcloud_to_laserscan_node",
+        package="pointcloud_to_laserscan",
+        parameters=[
+            {
+                "transform_tolerance": 0.01,
+                "min_height": 0.0,
+                "max_height": 100.0,
+                "angle_min": -1.5708,  # -M_PI/2
+                "angle_max": 1.5708,  # M_PI/2
+                "angle_increment": 0.0087,  # M_PI/360.0
+                "scan_time": 0.3333,
+                "range_min": 0.45,
+                "range_max": 100.0,
+                "use_inf": True,
+                "inf_epsilon": 1.0,
+            }
+        ],
+        remappings=[
+            ("cloud_in", "/carla/ego_vehicle/center_lidar"),
+            ("scan", "/carla/ego_vehicle/laserscan"),
+        ],
+    )
     ld = launch.LaunchDescription(
         [
+            pointcloud_to_laser,
             carla_client_node,
             rviz_node,
             costmap_node,

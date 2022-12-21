@@ -55,9 +55,9 @@ Visualization Manager:
       Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 0.9941540360450745
+      Max Intensity: 0.994154155254364
       Min Color: 0; 0; 0
-      Min Intensity: 0.390631765127182
+      Min Intensity: 0.3535494804382324
       Name: CenterLidar
       Position Transformer: XYZ
       Selectable: true
@@ -100,27 +100,28 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
+        ego_vehicle:
+          ego_vehicle/center_lidar:
+            {}
+          ego_vehicle/front_depth:
+            {}
+          ego_vehicle/front_rgb:
+            {}
+          ego_vehicle/gnss:
+            {}
+          ego_vehicle/imu:
+            {}
+          ego_vehicle/rgb_view:
+            {}
         map:
-          ego_vehicle:
-            ego_vehicle/center_lidar:
-              {}
-            ego_vehicle/front_depth:
-              {}
-            ego_vehicle/front_rgb:
-              {}
-            ego_vehicle/gnss:
-              {}
-            ego_vehicle/imu:
-              {}
-            ego_vehicle/rgb_view:
-              {}
+          {}
       Update Interval: 0
       Value: true
     - Alpha: 0.699999988079071
       Class: rviz_default_plugins/Map
       Color Scheme: map
       Draw Behind: false
-      Enabled: true
+      Enabled: false
       Name: Map
       Topic:
         Depth: 5
@@ -135,12 +136,12 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /costmap/costmap_updates
       Use Timestamp: false
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
       Enabled: true
       Name: Marker
       Namespaces:
-        {}
+        /: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -231,7 +232,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 14.6326265335083
+      Distance: 26.054481506347656
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -246,10 +247,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8603980541229248
+      Pitch: 0.2003980278968811
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.080416440963745
+      Yaw: 3.255415916442871
     Saved: ~
 Window Geometry:
   Displays:
