@@ -27,45 +27,7 @@ def generate_launch_description():
             "objects_definition_file": carla_objects_definition_file.as_posix(),
         }.items(),
     )
-    rviz_node = launch_ros.actions.Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="screen",
-        arguments=["-d", rviz_path.as_posix()],
-    )
-    # TODO: seperate costmap related nodes into separate repo
-    costmap_config_file_path: Path = (
-        base_path / "config" / "gokart_carla_1_costmap2d_config.yaml"
-    )
-    costmap_node = Node(
-        executable="nav2_costmap_2d",
-        package="nav2_costmap_2d",
-        parameters=[costmap_config_file_path.as_posix()],
-    )
-    costmap_marker_node = Node(
-        package="nav2_costmap_2d",
-        executable="nav2_costmap_2d_markers",
-        remappings=[
-            ("voxel_grid", "/costmap/voxel_grid"),
-            ("visualization_marker", "/costmap/voxel_grid/visualize"),
-        ],
-    )  # this node is only used for visualization
-    lifecycle_nodes = ["/costmap/costmap"]
-    use_sim_time = True
-    autostart = True
-    start_lifecycle_manager_cmd = launch_ros.actions.Node(
-        package="nav2_lifecycle_manager",
-        executable="lifecycle_manager",
-        name="lifecycle_manager",
-        output="screen",
-        emulate_tty=True,  # https://github.com/ros2/launch/issues/188
-        parameters=[
-            {"use_sim_time": use_sim_time},
-            {"autostart": autostart},
-            {"node_names": lifecycle_nodes},
-        ],
-    )
+
     pointcloud_to_laser = Node(
         name="pointcloud_to_laserscan",
         executable="pointcloud_to_laserscan_node",
@@ -90,14 +52,47 @@ def generate_launch_description():
             ("scan", "/carla/ego_vehicle/laserscan"),
         ],
     )
+    rviz_node = launch_ros.actions.Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="screen",
+        arguments=["-d", rviz_path.as_posix()],
+    )
+    costmap_config_file_path: Path = (
+        base_path / "config" / "gokart_carla_1_costmap2d_config.yaml"
+    )
+    assert costmap_config_file_path.exists()
+    costmap_manager_launch_file_path: Path = (
+        Path(get_package_share_directory("costmap_node_manager"))
+        / "launch"
+        / "costmap_node_manager.launch.py"
+    )
+    assert costmap_manager_launch_file_path.exists()
+    costmap_manager = launch.actions.IncludeLaunchDescription(
+        launch.launch_description_sources.PythonLaunchDescriptionSource(
+            costmap_manager_launch_file_path.as_posix()
+        ),
+        launch_arguments={
+            "costmap_config_file_path": costmap_config_file_path.as_posix(),
+        }.items(),
+    )
+    # costmap_marker_node = Node(
+    #     package="nav2_costmap_2d",
+    #     executable="nav2_costmap_2d_markers",
+    #     remappings=[
+    #         ("voxel_grid", "/costmap/voxel_grid"),
+    #         ("visualization_marker", "/costmap/voxel_grid/visualize"),
+    #     ],
+    # )  # this node is only used for visualization
+
     ld = launch.LaunchDescription(
         [
             pointcloud_to_laser,
             carla_client_node,
             rviz_node,
-            costmap_node,
-            start_lifecycle_manager_cmd,
-            costmap_marker_node,
+            costmap_manager,
+            # costmap_marker_node,
         ]
     )
     return ld

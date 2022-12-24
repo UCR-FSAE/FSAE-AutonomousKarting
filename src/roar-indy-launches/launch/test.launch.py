@@ -11,9 +11,8 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     base_path = Path(get_package_share_directory("roar-indy-launches"))
-    costmap_config_file_path: Path = (
-        base_path / "config" / "gokart_carla_1_costmap2d_config.yaml"
-    )
+    costmap_config_file_path: Path = base_path / "config" / "global_costmap.yml"
+    print(f"costmap_config = {costmap_config_file_path}")
     costmap_node = Node(
         executable="nav2_costmap_2d",
         package="nav2_costmap_2d",
