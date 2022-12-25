@@ -4,6 +4,9 @@ from ament_index_python.packages import get_package_share_directory
 import launch_ros
 from pathlib import Path
 from launch_ros.actions import Node
+from launch.conditions import IfCondition  # 1
+from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
 
 
 def generate_launch_description():
@@ -69,32 +72,34 @@ def generate_launch_description():
         / "costmap_node_manager.launch.py"
     )
     assert costmap_manager_launch_file_path.exists()
+
+    should_launch_local_costmap_marker_args = DeclareLaunchArgument(
+        "should_launch_local_costmap_marker",
+        default_value="False",  # default_value=[], has the same problem
+        description="true to start emitting local costmap detected obstacle markers. False by default",
+    )
     costmap_manager = launch.actions.IncludeLaunchDescription(
         launch.launch_description_sources.PythonLaunchDescriptionSource(
             costmap_manager_launch_file_path.as_posix()
         ),
         launch_arguments={
             "costmap_config_file_path": costmap_config_file_path.as_posix(),
+            "should_launch_local_costmap_marker": LaunchConfiguration(
+                "should_launch_local_costmap_marker"
+            ),
         }.items(),
     )
-    # costmap_marker_node = Node(
-    #     package="nav2_costmap_2d",
-    #     executable="nav2_costmap_2d_markers",
-    #     remappings=[
-    #         ("voxel_grid", "/costmap/voxel_grid"),
-    #         ("visualization_marker", "/costmap/voxel_grid/visualize"),
-    #     ],
-    # )  # this node is only used for visualization
 
-    ld = launch.LaunchDescription(
-        [
-            pointcloud_to_laser,
-            carla_client_node,
-            rviz_node,
-            costmap_manager,
-            # costmap_marker_node,
-        ]
-    )
+    ld = launch.LaunchDescription()
+    # add args
+    ld.add_action(should_launch_local_costmap_marker_args)
+
+    # add nodes
+    ld.add_action(pointcloud_to_laser)
+    ld.add_action(carla_client_node)
+    ld.add_action(rviz_node)
+    ld.add_action(costmap_manager)
+
     return ld
 
 
