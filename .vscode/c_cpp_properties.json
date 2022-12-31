@@ -6,7 +6,8 @@
                 "${workspaceFolder}/**",
                 "/opt/ros/foxy",
                 "/opt/ros/foxy/include",
-                "/usr/include/gazebo-11"
+                "/usr/include/gazebo-11",
+                "${workspaceFolder}/src/agent/src/planning/global_planner_manager/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
