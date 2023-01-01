@@ -7,6 +7,8 @@ from launch_ros.actions import Node
 from launch.conditions import IfCondition  # 1
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
 def generate_launch_description():
@@ -90,6 +92,32 @@ def generate_launch_description():
         }.items(),
     )
 
+    global_planner_manager_file_path: Path = (
+        Path(get_package_share_directory("global_planner_manager"))
+        / "launch"
+        / "global_planner_manager.launch.py"
+    )
+    assert global_planner_manager_file_path.exists()
+
+    global_planner_launcher = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(global_planner_manager_file_path.as_posix())
+    )
+
+    lifecycle_nodes = ["/global_planner_manager"]
+    use_sim_time = True
+    autostart = True
+    start_lifecycle_manager_cmd = launch_ros.actions.Node(
+        package="nav2_lifecycle_manager",
+        executable="lifecycle_manager",
+        name="lifecycle_manager",
+        output="screen",
+        emulate_tty=True,  # https://github.com/ros2/launch/issues/188
+        parameters=[
+            {"use_sim_time": use_sim_time},
+            {"autostart": autostart},
+            {"node_names": lifecycle_nodes},
+        ],
+    )
     ld = launch.LaunchDescription()
     # add args
     ld.add_action(should_launch_local_costmap_marker_args)
@@ -97,8 +125,8 @@ def generate_launch_description():
     # add nodes
     ld.add_action(pointcloud_to_laser)
     ld.add_action(carla_client_node)
-    ld.add_action(rviz_node)
     ld.add_action(costmap_manager)
+    ld.add_action(global_planner_launcher)
 
     return ld
 

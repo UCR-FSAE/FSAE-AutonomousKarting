@@ -13,16 +13,16 @@ This repo is the parent repo for the ROAR Go-Kart project.
 - Installing this repo:
   - Sample command: ```git submodule update --init --recursive src/agent/ src/simulation/```
     - For detail: [Stackoverflow](https://stackoverflow.com/questions/16728866/how-to-only-update-specific-git-submodules)
-  - In the `roar-indy-ws` directory, execute ```colcon build --symlink-install```
+  - In the `roar-indy-ws` directory, execute ```colcon build```
   - remember to source by `source install/setup.bash` for both the ROS2 install AND this repo's. 
 
 
+- Usage
+  - To start vehicle
+    - `ros2 launch roar-indy-launches gokart_carla_1.launch.py`
+  - To start lifecycle configuration
+    - `./lifecycle_configuration.sh`
+    - TODO: integrate configuration into RVIZ dashboard
+  - To start visualization
+    - `./visualize.sh` 
 
-# Legacy Documentation
-##### ROAR Indy collaboration repo. 
-This is the parent working directory for the ROAR indy collaboration. 
-
-
-##### Quick start
-Follow steps on this Google Drive to install our repo
-https://docs.google.com/document/d/1Q_P6zMBUanapOC2U1oSCSh_adWSEsXSmkyNKCr39F6s/edit
