@@ -98,26 +98,15 @@ def generate_launch_description():
         / "global_planner_manager.launch.py"
     )
     assert global_planner_manager_file_path.exists()
-
+    global_waypoint_file_path: Path = base_path / "config" / "carla_waypoints.txt"
+    assert global_waypoint_file_path.exists()
     global_planner_launcher = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(global_planner_manager_file_path.as_posix())
+        PythonLaunchDescriptionSource(global_planner_manager_file_path.as_posix()),
+        launch_arguments={
+            "waypoint_file_path": global_waypoint_file_path.as_posix()
+        }.items(),
     )
 
-    lifecycle_nodes = ["/global_planner_manager"]
-    use_sim_time = True
-    autostart = True
-    start_lifecycle_manager_cmd = launch_ros.actions.Node(
-        package="nav2_lifecycle_manager",
-        executable="lifecycle_manager",
-        name="lifecycle_manager",
-        output="screen",
-        emulate_tty=True,  # https://github.com/ros2/launch/issues/188
-        parameters=[
-            {"use_sim_time": use_sim_time},
-            {"autostart": autostart},
-            {"node_names": lifecycle_nodes},
-        ],
-    )
     ld = launch.LaunchDescription()
     # add args
     ld.add_action(should_launch_local_costmap_marker_args)

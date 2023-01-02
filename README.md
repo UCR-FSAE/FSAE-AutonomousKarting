@@ -19,10 +19,9 @@ This repo is the parent repo for the ROAR Go-Kart project.
 
 - Usage
   - To start vehicle
-    - `ros2 launch roar-indy-launches gokart_carla_1.launch.py`
+    - `./scripts/launch_simulation_client.sh`
   - To start lifecycle configuration
-    - `./lifecycle_configuration.sh`
-    - TODO: integrate configuration into RVIZ dashboard
+    - `./scripts/lifecycle_configuration.sh`
   - To start visualization
-    - `./visualize.sh` 
+    - `./scripts/visualize.sh` 
 
