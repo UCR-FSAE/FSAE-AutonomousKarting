@@ -20,16 +20,24 @@ def generate_launch_description():
     rviz_path: Path = base_path / "config" / "gokart_carla_1.rviz"
     assert rviz_path.exists(), f"{rviz_path} does not exist"
 
+    should_launch_manual_control_args = DeclareLaunchArgument(
+        "should_launch_manual_control",
+        default_value="False",  # default_value=[], has the same problem
+        description="True to start manual control, false otherwise",
+    )
     carla_client_node = launch.actions.IncludeLaunchDescription(
         launch.launch_description_sources.PythonLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory("roar_carla_ros2"),
-                "roar_carla_no_rviz.launch.py",
+                "roar_carla.launch.py",
             )
         ),
         launch_arguments={
             "town": "Town04",
             "objects_definition_file": carla_objects_definition_file.as_posix(),
+            "should_launch_manual_control": LaunchConfiguration(
+                "should_launch_manual_control"
+            ),
         }.items(),
     )
 
@@ -57,12 +65,19 @@ def generate_launch_description():
             ("scan", "/carla/ego_vehicle/laserscan"),
         ],
     )
+
+    should_launch_rviz_args = DeclareLaunchArgument(
+        "should_launch_rviz",
+        default_value="False",  # default_value=[], has the same problem
+        description="True to start rviz, false otherwise",
+    )
     rviz_node = launch_ros.actions.Node(
         package="rviz2",
         executable="rviz2",
         name="rviz2",
         output="screen",
         arguments=["-d", rviz_path.as_posix()],
+        condition=IfCondition(LaunchConfiguration("should_launch_rviz")),
     )
     costmap_config_file_path: Path = (
         base_path / "config" / "gokart_carla_1_costmap2d_config.yaml"
@@ -107,15 +122,30 @@ def generate_launch_description():
         }.items(),
     )
 
+    simple_local_planner_file_path: Path = (
+        Path(get_package_share_directory("simple_local_planner"))
+        / "launch"
+        / "simple_local_planner.launch.py"
+    )
+    assert simple_local_planner_file_path.exists()
+    simple_local_planner_launcher = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(simple_local_planner_file_path.as_posix()),
+        # launch_arguments={"target_spd": 10.0, "loop_rate": 30.0}.items(),
+    )
+
     ld = launch.LaunchDescription()
     # add args
     ld.add_action(should_launch_local_costmap_marker_args)
+    ld.add_action(should_launch_rviz_args)
+    ld.add_action(should_launch_manual_control_args)
 
     # add nodes
+    ld.add_action(rviz_node)
     ld.add_action(pointcloud_to_laser)
     ld.add_action(carla_client_node)
     ld.add_action(costmap_manager)
     ld.add_action(global_planner_launcher)
+    ld.add_action(simple_local_planner_launcher)
 
     return ld
 
