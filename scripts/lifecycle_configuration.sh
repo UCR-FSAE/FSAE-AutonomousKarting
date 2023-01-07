@@ -1,3 +1,7 @@
+# Copyright 2023 michael. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
 echo "Starting to configure"
 echo -e "--- Configuring costmap_node_manager ---"
 ros2 lifecycle set /costmap_node_manager configure 
