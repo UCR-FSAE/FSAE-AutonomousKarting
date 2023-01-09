@@ -107,10 +107,10 @@ def generate_launch_description():
     ld.add_action(should_launch_rviz_args)
 
     ld.add_action(rviz_node)
-    # ld.add_action(lidar_launch)
+    ld.add_action(lidar_launch)
     ld.add_action(zed_launch)
-    # ld.add_action(gps_launch)
-    # ld.add_action(vehicle_urdf_launch)
+    ld.add_action(gps_launch)
+    ld.add_action(vehicle_urdf_launch)
     return ld
 
 
