@@ -102,14 +102,29 @@ def generate_launch_description():
         }.items(),
     )
 
+    manual_control_file_path: Path = (
+        Path(get_package_share_directory("manual_controller"))
+        / "launch"
+        / "manual_control.launch.py"
+    )
+    assert manual_control_file_path.exists()
+    manual_control_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(manual_control_file_path.as_posix()),
+        condition=IfCondition(LaunchConfiguration("should_launch_manual_control")),
+    )
+    should_launch_manual_control = DeclareLaunchArgument(
+        "should_launch_manual_control", default_value="False"
+    )
     ld = launch.LaunchDescription()
 
     ld.add_action(should_launch_rviz_args)
+    ld.add_action(should_launch_manual_control)
 
     ld.add_action(rviz_node)
-    ld.add_action(lidar_launch)
     ld.add_action(zed_launch)
-    ld.add_action(gps_launch)
+    ld.add_action(manual_control_launch)
+    # ld.add_action(lidar_launch)
+    # ld.add_action(gps_launch)
     ld.add_action(vehicle_urdf_launch)
     return ld
 
