@@ -9,6 +9,10 @@ import launch_ros
 from pathlib import Path
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription
+from launch.conditions import IfCondition  # 1
 
 os.environ["RCUTILS_CONSOLE_OUTPUT_FORMAT"] = "{time}: [{name}] [{severity}]\t{message}"
 
@@ -18,12 +22,19 @@ def generate_launch_description():
     gokart_roar_1: Path = Path("config/")
     rviz_path: Path = base_path / gokart_roar_1 / "gokart_roar_1.rviz"
     assert rviz_path.exists(), f"{rviz_path} does not exist"
+
+    should_launch_rviz_args = DeclareLaunchArgument(
+        "should_launch_rviz",
+        default_value="False",  # default_value=[], has the same problem
+        description="True to start rviz, false otherwise",
+    )
     rviz_node = launch_ros.actions.Node(
         package="rviz2",
         executable="rviz2",
         name="rviz2",
         output="screen",
         arguments=["-d", rviz_path.as_posix()],
+        condition=IfCondition(LaunchConfiguration("should_launch_rviz")),
     )
 
     # vehicle description launch
@@ -57,11 +68,21 @@ def generate_launch_description():
     zed_file_path: Path = (
         Path(get_package_share_directory("zed_wrapper"))
         / "launch"
-        / "indy_zed2i_no_rviz.launch.py"
+        / "indy_zed2i.launch.py"
     )
+    zed_config_file_path: Path = Path(base_path / "config" / "zed2i_config.yaml")
     assert zed_file_path.exists()
+    assert zed_config_file_path.exists()
     zed_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(zed_file_path.as_posix())
+        PythonLaunchDescriptionSource(zed_file_path.as_posix()),
+        launch_arguments={
+            "config_common_path": zed_config_file_path.as_posix(),
+            "config_camera_path": zed_config_file_path.as_posix(),
+            "node_name": "center_camera",
+            "camera_name": "zed2i",
+            "base_frame": "camera_link",
+            "publish_urdf": "True",
+        }.items(),
     )
 
     septentrio_file_path: Path = (
@@ -81,25 +102,15 @@ def generate_launch_description():
         }.items(),
     )
 
-    ld = launch.LaunchDescription(
-        [
-            launch.actions.DeclareLaunchArgument(
-                name="start_rviz",
-                default_value="false",
-                description="Start RVIZ or not",
-            ),
-            launch.actions.DeclareLaunchArgument(
-                name="rviz_path",
-                default_value="false",
-                description="absolute path for RVIZ config file",
-            ),
-            rviz_node,
-            vehicle_urdf_launch,
-            lidar_launch,
-            zed_launch,
-            gps_launch,
-        ]
-    )
+    ld = launch.LaunchDescription()
+
+    ld.add_action(should_launch_rviz_args)
+
+    ld.add_action(rviz_node)
+    # ld.add_action(lidar_launch)
+    ld.add_action(zed_launch)
+    # ld.add_action(gps_launch)
+    # ld.add_action(vehicle_urdf_launch)
     return ld
 
 
