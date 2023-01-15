@@ -24,9 +24,15 @@ def generate_launch_description():
     rviz_path: Path = base_path / "config" / "gokart_carla_1.rviz"
     assert rviz_path.exists(), f"{rviz_path} does not exist"
 
+    debug_args = DeclareLaunchArgument(
+        "debug",
+        default_value="False",
+        description="True to start debug outputs",
+    )
+
     should_launch_manual_control_args = DeclareLaunchArgument(
         "should_launch_manual_control",
-        default_value="False",  # default_value=[], has the same problem
+        default_value="False",
         description="True to start manual control, false otherwise",
     )
     carla_client_node = launch.actions.IncludeLaunchDescription(
@@ -122,7 +128,8 @@ def generate_launch_description():
     global_planner_launcher = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(global_planner_manager_file_path.as_posix()),
         launch_arguments={
-            "waypoint_file_path": global_waypoint_file_path.as_posix()
+            "waypoint_file_path": global_waypoint_file_path.as_posix(),
+            "debug": LaunchConfiguration("debug"),
         }.items(),
     )
 
@@ -139,6 +146,7 @@ def generate_launch_description():
 
     ld = launch.LaunchDescription()
     # add args
+    ld.add_action(debug_args)
     ld.add_action(should_launch_local_costmap_marker_args)
     ld.add_action(should_launch_rviz_args)
     ld.add_action(should_launch_manual_control_args)

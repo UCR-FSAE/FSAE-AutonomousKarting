@@ -1,0 +1,31 @@
+/pointcloud_to_laserscan:
+  ros__parameters:
+    angle_increment: 0.0087
+    angle_max: 1.5708
+    angle_min: -1.5708
+    inf_epsilon: 1.0
+    max_height: 100.0
+    min_height: 0.0
+    queue_size: 20
+    range_max: 100.0
+    range_min: 0.45
+    scan_time: 0.3333
+    target_frame: ''
+    transform_tolerance: 0.01
+    use_inf: true
+    use_sim_time: false
+/costmap_node_manager:
+  ros__parameters:
+    should_activate_global_costmap: false
+    use_sim_time: true
+    costmap_config_file_path: ./src/roar-indy-launches/config/carla/gokart_carla_1_costmap2d_config.yaml
+/global_planner_manager:
+  ros__parameters:
+    debug_mode: false
+    use_sim_time: false
+    waypoint_file_path: ./src/roar-indy-launches/config/carla/carla_waypoints.txt
+/simple_local_planner:
+  ros__parameters:
+    loop_rate: 5.0
+    target_spd: 10.0
+    use_sim_time: false
