@@ -7,7 +7,11 @@
                 "/opt/ros/foxy",
                 "/opt/ros/foxy/include",
                 "/usr/include/gazebo-11",
-                "${workspaceFolder}/src/agent/src/planning/global_planner_manager/include"
+                "${workspaceFolder}/src/agent/src/planning/global_planner_manager/include",
+                "/usr/include/x86_64-linux-gnu/qt5/QtWidgets",
+                "/usr/include/x86_64-linux-gnu/qt5/QtCore",
+                "${workspaceFolder}/src/agent/src/roar_rviz_plugin/include",
+                "/usr/include/x86_64-linux-gnu/qt5"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
