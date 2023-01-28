@@ -83,6 +83,7 @@
         "filesystem": "cpp",
         "*.ipp": "cpp",
         "forward_list": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "*.msg": "cpp"
     }
 }

@@ -11,7 +11,8 @@
                 "/usr/include/x86_64-linux-gnu/qt5/QtWidgets",
                 "/usr/include/x86_64-linux-gnu/qt5/QtCore",
                 "${workspaceFolder}/src/agent/src/roar_rviz_plugin/include",
-                "/usr/include/x86_64-linux-gnu/qt5"
+                "/usr/include/x86_64-linux-gnu/qt5",
+                "${workspaceFolder}/src/hardware/src/pid_control_converter/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
