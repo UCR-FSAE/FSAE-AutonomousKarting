@@ -18,10 +18,10 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 def generate_launch_description():
     base_path = Path(get_package_share_directory("roar-indy-launches"))
     carla_objects_definition_file = (
-        base_path / "config" / "carla_objects_definition_file.json"
+        base_path / "config" / "carla" / "carla_objects_definition_file.json"
     )
     assert carla_objects_definition_file.exists()
-    rviz_path: Path = base_path / "config" / "gokart_carla_1.rviz"
+    rviz_path: Path = base_path / "config" / "carla" / "gokart_carla_1.rviz"
     assert rviz_path.exists(), f"{rviz_path} does not exist"
 
     debug_args = DeclareLaunchArgument(
@@ -90,7 +90,7 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration("should_launch_rviz")),
     )
     costmap_config_file_path: Path = (
-        base_path / "config" / "gokart_carla_1_costmap2d_config.yaml"
+        base_path / "config" / "carla" / "gokart_carla_1_costmap2d_config.yaml"
     )
     assert costmap_config_file_path.exists()
     costmap_manager_launch_file_path: Path = (
@@ -123,7 +123,9 @@ def generate_launch_description():
         / "global_planner_manager.launch.py"
     )
     assert global_planner_manager_file_path.exists()
-    global_waypoint_file_path: Path = base_path / "config" / "carla_waypoints.txt"
+    global_waypoint_file_path: Path = (
+        base_path / "config" / "carla" / "carla_waypoints.txt"
+    )
     assert global_waypoint_file_path.exists()
     global_planner_launcher = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(global_planner_manager_file_path.as_posix()),
