@@ -84,6 +84,7 @@
         "*.ipp": "cpp",
         "forward_list": "cpp",
         "valarray": "cpp",
-        "*.msg": "cpp"
+        "*.msg": "cpp",
+        "*.tpp": "cpp"
     }
 }

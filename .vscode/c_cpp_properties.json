@@ -12,8 +12,11 @@
                 "/usr/include/x86_64-linux-gnu/qt5/QtCore",
                 "${workspaceFolder}/src/agent/src/roar_rviz_plugin/include",
                 "/usr/include/x86_64-linux-gnu/qt5",
-                "${workspaceFolder}/src/hardware/src/pid_control_converter/include",
-                "${workspaceFolder}/src/agent/src/control/pid_controller_manager/include"
+                "${workspaceFolder}/src/agent/src/control/pid_controller_manager/include",
+                "${workspaceFolder}/install/roar_msgs/include",
+                "${workspaceFolder}/install/",
+                "${workspaceFolder}/src/hardware/src/control_converter/include",
+                "${workspaceFolder}/install/control_interfaces/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",

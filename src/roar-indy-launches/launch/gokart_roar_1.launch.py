@@ -115,6 +115,22 @@ def generate_launch_description():
     should_launch_manual_control = DeclareLaunchArgument(
         "should_launch_manual_control", default_value="False"
     )
+
+    pid_control_converter_path: Path = (
+        Path(get_package_share_directory("pid_control_converter"))
+        / "launch"
+        / "pid_control_converter.launch.py"
+    )
+    assert pid_control_converter_path.exists()
+    pid_control_converter = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(pid_control_converter_path.as_posix()),
+        launch_arguments={
+            "steering_pid_topic": "/control/pid/steering",
+            "throttle_pid_topic": "/control/pid/throttle",
+            "output_topic": "/arduino/ego_vehicle_control",
+        }.items(),
+    )
+
     ld = launch.LaunchDescription()
 
     ld.add_action(should_launch_rviz_args)
@@ -126,6 +142,7 @@ def generate_launch_description():
     # ld.add_action(lidar_launch)
     # ld.add_action(gps_launch)
     ld.add_action(vehicle_urdf_launch)
+    ld.add_action(pid_control_converter)
     return ld
 
 
