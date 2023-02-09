@@ -135,15 +135,16 @@ def generate_launch_description():
         }.items(),
     )
 
-    simple_local_planner_file_path: Path = (
-        Path(get_package_share_directory("simple_local_planner"))
-        / "launch"
-        / "simple_local_planner.launch.py"
-    )
-    assert simple_local_planner_file_path.exists()
-    simple_local_planner_launcher = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(simple_local_planner_file_path.as_posix()),
-        # launch_arguments={"target_spd": 10.0, "loop_rate": 30.0}.items(),
+    lifecycle_manager = Node(
+        package="nav2_lifecycle_manager",
+        executable="lifecycle_manager",
+        name="lifecycle_manager_navigation",
+        output="screen",
+        parameters=[
+            {"use_sim_time": True},
+            {"autostart": True},
+            {"node_names": ["/costmap_node_manager", "/global_planner_manager"]},
+        ],
     )
 
     ld = launch.LaunchDescription()
@@ -159,8 +160,8 @@ def generate_launch_description():
     ld.add_action(carla_client_node)
     ld.add_action(costmap_manager)
     ld.add_action(global_planner_launcher)
-    ld.add_action(simple_local_planner_launcher)
 
+    ld.add_action(lifecycle_manager)
     return ld
 
 
