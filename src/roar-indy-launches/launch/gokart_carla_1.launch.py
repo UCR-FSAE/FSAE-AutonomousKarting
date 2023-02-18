@@ -141,7 +141,27 @@ def generate_launch_description():
     )
     simple_local_planner_launcher = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(simple_local_planner_file_path.as_posix()),
-        launch_arguments={"loop_rate": "10.0"}.items(),
+        launch_arguments={"loop_rate": "10.0", "target_spd": "1.0"}.items(),
+    )
+    roar_carla_control_path: Path = (
+        Path(get_package_share_directory("roar_carla"))
+        / "launch"
+        / "roar_carla_control.launch.py"
+    )
+    roar_carla_control = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(roar_carla_control_path.as_posix())
+    )
+
+    pid_control_path: Path = (
+        Path(get_package_share_directory("pid_control"))
+        / "launch"
+        / "pid_control.launch.py"
+    )
+    pid_control = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(pid_control_path.as_posix()),
+        launch_arguments={
+            "debug": LaunchConfiguration("debug"),
+        }.items(),
     )
 
     lifecycle_manager = Node(
@@ -157,6 +177,7 @@ def generate_launch_description():
                     "/costmap_node_manager",
                     "/global_planner_manager",
                     "/simple_local_planner",
+                    "/pid_control",
                 ]
             },
         ],
@@ -176,6 +197,8 @@ def generate_launch_description():
     ld.add_action(costmap_manager)
     ld.add_action(global_planner_launcher)
     ld.add_action(simple_local_planner_launcher)
+    ld.add_action(roar_carla_control)
+    ld.add_action(pid_control)
 
     ld.add_action(lifecycle_manager)
     return ld

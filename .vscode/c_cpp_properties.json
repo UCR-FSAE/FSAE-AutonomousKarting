@@ -16,7 +16,8 @@
                 "${workspaceFolder}/install/roar_msgs/include",
                 "${workspaceFolder}/install/",
                 "${workspaceFolder}/src/hardware/src/control_converter/include",
-                "${workspaceFolder}/install/control_interfaces/include"
+                "${workspaceFolder}/install/control_interfaces/include",
+                "/home/michael/carla-ros-bridge/install/carla_msgs/include/"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
