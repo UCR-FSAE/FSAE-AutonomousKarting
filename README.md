@@ -24,10 +24,6 @@ This repo is the parent repo for the ROAR Go-Kart project.
 
 
 - Usage
-  - To start vehicle
+  - To main script
     - `./scripts/launch_simulation_client.sh`
-  - To start lifecycle configuration
-    - `./scripts/lifecycle_configuration.sh`
-  - To start visualization
-    - `./scripts/visualize.sh` 
 
