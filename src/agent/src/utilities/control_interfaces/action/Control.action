@@ -1,0 +1,16 @@
+# Request
+
+# the path to follow
+nav_msgs/Path path
+int32 target_spd
+---
+
+# Result
+
+# status msg, -1 = abnormal, 0 = normal, otherwise = custom status
+int32 status
+---
+# Feedback
+
+# current executing index
+uint32 curr_index
