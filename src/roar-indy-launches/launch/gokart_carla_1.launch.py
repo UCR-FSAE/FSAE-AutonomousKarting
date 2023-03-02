@@ -35,12 +35,18 @@ def generate_launch_description():
         default_value="False",
         description="True to start manual control, false otherwise",
     )
+
+    roar_carla_launch_file_path: Path = (
+        Path(get_package_share_directory("roar_carla"))
+        / "launch"
+        / "roar_carla.launch.py"
+    )
+    assert (
+        roar_carla_launch_file_path.exists()
+    ), f"[{roar_carla_launch_file_path}] does not exist"
     carla_client_node = launch.actions.IncludeLaunchDescription(
         launch.launch_description_sources.PythonLaunchDescriptionSource(
-            os.path.join(
-                get_package_share_directory("roar_carla_ros2"),
-                "roar_carla.launch.py",
-            )
+            roar_carla_launch_file_path.as_posix()
         ),
         launch_arguments={
             "town": "Town04",
