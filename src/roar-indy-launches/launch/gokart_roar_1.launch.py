@@ -24,7 +24,7 @@ def generate_launch_description():
     assert rviz_path.exists(), f"{rviz_path} does not exist"
 
     should_launch_rviz_args = DeclareLaunchArgument(
-        "should_launch_rviz",
+        "rviz",
         default_value="False",  # default_value=[], has the same problem
         description="True to start rviz, false otherwise",
     )
@@ -34,16 +34,16 @@ def generate_launch_description():
         name="rviz2",
         output="screen",
         arguments=["-d", rviz_path.as_posix()],
-        condition=IfCondition(LaunchConfiguration("should_launch_rviz")),
+        condition=IfCondition(LaunchConfiguration("rviz")),
     )
 
     # vehicle description launch
     urdf_file_path: Path = (
         Path(get_package_share_directory("roar-gokart-urdf"))
         / "launch"
-        / "state_publisher_no_rviz.launch.py"
+        / "state_publisher.launch.py"
     )
-    assert urdf_file_path.exists()
+    assert urdf_file_path.exists(), f"[{urdf_file_path}] does not exist"
     vehicle_urdf_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(urdf_file_path.as_posix())
     )
@@ -85,64 +85,58 @@ def generate_launch_description():
         }.items(),
     )
 
-    septentrio_file_path: Path = (
-        Path(get_package_share_directory("septentrio_gnss_driver"))
-        / "launch"
-        / "rover_node.py"
+    # septentrio_file_path: Path = (
+    #     Path(get_package_share_directory("septentrio_gnss_driver"))
+    #     / "launch"
+    #     / "rover_node.py"
+    # )
+    # septentrio_config_file_path: Path = (
+    #     base_path / "config" / "gokart_roar_1_septentrio_gps_config.yaml"
+    # )
+    # assert septentrio_file_path.exists()
+    # assert septentrio_config_file_path.exists()
+    # gps_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(septentrio_file_path.as_posix()),
+    #     launch_arguments={
+    #         "path_to_config": septentrio_config_file_path.as_posix(),
+    #     }.items(),
+    # )
+
+    manual_control_node = launch_ros.actions.Node(
+        package="manual_controller",
+        executable="manual_controller_node",
+        name="rviz2",
+        output="screen",
+        arguments=["-d", rviz_path.as_posix()],
+        condition=IfCondition(LaunchConfiguration("manual_control")),
     )
-    septentrio_config_file_path: Path = (
-        base_path / "config" / "gokart_roar_1_septentrio_gps_config.yaml"
-    )
-    assert septentrio_file_path.exists()
-    assert septentrio_config_file_path.exists()
-    gps_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(septentrio_file_path.as_posix()),
-        launch_arguments={
-            "path_to_config": septentrio_config_file_path.as_posix(),
-        }.items(),
+    should_launch_manual_control_args = DeclareLaunchArgument(
+        "manual_control", default_value="False"
     )
 
-    manual_control_file_path: Path = (
-        Path(get_package_share_directory("manual_controller"))
-        / "launch"
-        / "manual_control.launch.py"
-    )
-    assert manual_control_file_path.exists()
-    manual_control_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(manual_control_file_path.as_posix()),
-        condition=IfCondition(LaunchConfiguration("should_launch_manual_control")),
-    )
-    should_launch_manual_control = DeclareLaunchArgument(
-        "should_launch_manual_control", default_value="False"
-    )
-
-    pid_control_converter_path: Path = (
-        Path(get_package_share_directory("pid_control_converter"))
-        / "launch"
-        / "pid_control_converter.launch.py"
-    )
-    assert pid_control_converter_path.exists()
-    pid_control_converter = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(pid_control_converter_path.as_posix()),
-        launch_arguments={
-            "steering_pid_topic": "/control/pid/steering",
-            "throttle_pid_topic": "/control/pid/throttle",
-            "output_topic": "/arduino/ego_vehicle_control",
-        }.items(),
-    )
+    # pid_control_converter_path: Path = (
+    #     Path(get_package_share_directory("control_converter"))
+    #     / "launch"
+    #     / "pid_control_converter.launch.py"
+    # )
+    # assert pid_control_converter_path.exists()
+    # pid_control_converter = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(pid_control_converter_path.as_posix()),
+    #     launch_arguments={}.items(),
+    # )
 
     ld = launch.LaunchDescription()
 
     ld.add_action(should_launch_rviz_args)
-    ld.add_action(should_launch_manual_control)
+    ld.add_action(should_launch_manual_control_args)
 
     ld.add_action(rviz_node)
     ld.add_action(zed_launch)
-    ld.add_action(manual_control_launch)
+    ld.add_action(manual_control_node)
     # ld.add_action(lidar_launch)
     # ld.add_action(gps_launch)
     ld.add_action(vehicle_urdf_launch)
-    ld.add_action(pid_control_converter)
+    # ld.add_action(pid_control_converter)
     return ld
 
 
