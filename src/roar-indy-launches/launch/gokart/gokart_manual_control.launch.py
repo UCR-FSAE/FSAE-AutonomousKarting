@@ -69,6 +69,11 @@ def generate_launch_description():
         }.items(),
     )
 
+    arduino_comm_node = launch_ros.actions.Node(
+        package="arduino_comm",
+        executable="arduino_comm_node",
+    )
+
     manual_control_node = launch_ros.actions.Node(
         package="manual_controller",
         executable="manual_controller_node",
@@ -84,6 +89,7 @@ def generate_launch_description():
     ld.add_action(zed_launch)
     ld.add_action(manual_control_node)
     ld.add_action(vehicle_urdf_launch)
+    ld.add_action(arduino_comm_node)
     return ld
 
 
