@@ -6,10 +6,13 @@ import launch
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
+from ament_index_python.packages import get_package_share_directory
+from pathlib import Path
 
 
 def generate_launch_description():
     ld = launch.LaunchDescription()
+    base_path = Path(get_package_share_directory("pid_control"))
 
     loop_rate = DeclareLaunchArgument(
         "loop_rate",
@@ -19,6 +22,10 @@ def generate_launch_description():
         "debug",
         default_value="False",
     )
+    pid_config_file_path = DeclareLaunchArgument(
+        "pid_config_file_path",
+        default_value=(base_path / "config" / "carla_pid.json").as_posix(),
+    )
     node = Node(
         name="pid_control",
         executable="pid_control_node",
@@ -27,6 +34,7 @@ def generate_launch_description():
             {
                 "loop_rate": LaunchConfiguration("loop_rate"),
                 "debug": LaunchConfiguration("debug"),
+                "pid_config_file_path": LaunchConfiguration("pid_config_file_path"),
             }
         ],
     )
@@ -49,6 +57,7 @@ def generate_launch_description():
     # args
     ld.add_action(loop_rate)
     ld.add_action(debug_args)
+    ld.add_action(pid_config_file_path)
 
     # node
     ld.add_action(node)

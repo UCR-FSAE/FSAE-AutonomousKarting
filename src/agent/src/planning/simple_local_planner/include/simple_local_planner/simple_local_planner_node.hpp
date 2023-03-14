@@ -48,8 +48,10 @@ namespace local_planner
         void send_goal(const nav_msgs::msg::Path::SharedPtr path, float target_spd);
         nav_msgs::msg::Path::SharedPtr find_trajectory();
         void result_callback(const GoalHandleControlAction::WrappedResult &result);
-        void feedback_callback(GoalHandleControlAction::SharedPtr, const std::shared_ptr<const ControlAction::Feedback> feedback);
+        void feedback_callback(GoalHandleControlAction::SharedPtr future, const std::shared_ptr<const ControlAction::Feedback> feedback);
         void goal_response_callback(std::shared_future<GoalHandleControlAction::SharedPtr> future);
+        bool shouldUpdateTrajectory();
+
         // start of variable section
         std::shared_ptr<geometry_msgs::msg::Pose> latest_waypoint_;
         rclcpp::Subscription<geometry_msgs::msg::Pose>::ConstSharedPtr
@@ -68,6 +70,7 @@ namespace local_planner
 
         rclcpp_action::Client<ControlAction>::SharedPtr control_action_client_;
 
+        int num_goals_processing = 0;
         // TODO: add costmap receiving
         };
 

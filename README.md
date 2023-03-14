@@ -21,7 +21,7 @@ This repo is the parent repo for the ROAR Go-Kart project.
 - Installing this repo:
   - Sample command: ```git submodule update --init --recursive src/simulation/ src/hardware```
     - For detail: [Stackoverflow](https://stackoverflow.com/questions/16728866/how-to-only-update-specific-git-submodules)
-  - In the `roar-indy-ws` directory, execute ```colcon build```
+  - In the `roar-gokart-ws` directory, execute ```colcon build```
   - remember to source by `source install/setup.bash` for both the ROS2 install AND this repo's. 
   - 
 

@@ -58,6 +58,7 @@ namespace local_planner
   }
   nav2_util::CallbackReturn SimpleLocalPlannerNode::on_cleanup(const rclcpp_lifecycle::State &state)
   {
+    num_goals_processing = 0;
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn SimpleLocalPlannerNode::on_shutdown(const rclcpp_lifecycle::State &state) 
@@ -88,65 +89,78 @@ namespace local_planner
 
     while (this->shouldExecute)
     {
-      if (this->is_all_data_synced()) {
+      // RCLCPP_INFO(get_logger(), "num_goals_processing: %d", num_goals_processing);
+      if (this->shouldUpdateTrajectory())
+      {
         nav_msgs::msg::Path::SharedPtr path = this->find_trajectory();
-        if (path != nullptr) {
+        if (path != nullptr)
+        {
           this->path_publisher_->publish(*path);
 
           // TODO: change spd as needed
           // TODO: figure out if change spd should happen at local planner level?
-          this->send_goal(path, this->get_parameter("target_spd").as_double()); 
+          this->send_goal(path, this->get_parameter("target_spd").as_double());
         }
       } else {
-        RCLCPP_INFO(this->get_logger(), "Odom or waypoint msg not arrived");
+        // RCLCPP_INFO(get_logger(), "Not updating trajectory");
       }
-
       loop_rate.sleep();
     }
     RCLCPP_INFO(this->get_logger(), "Finished execution");
   }
-  void SimpleLocalPlannerNode::send_goal(const nav_msgs::msg::Path::SharedPtr path, float target_spd)
+
+  bool SimpleLocalPlannerNode::shouldUpdateTrajectory()
   {
+    return this->is_all_data_synced() && num_goals_processing == 0;
+  }
+
+  void
+  SimpleLocalPlannerNode::send_goal(const nav_msgs::msg::Path::SharedPtr path, float target_spd)
+  {
+    using namespace std::placeholders;
+
     if (!this->control_action_client_->wait_for_action_server())
     {
       RCLCPP_ERROR(this->get_logger(), "Control action server not available, not sending goal");
       return;
     }
-      auto goal_msg = ControlAction::Goal();
-      goal_msg.path = *path;
-      goal_msg.target_spd = target_spd;
+    auto goal_msg = ControlAction::Goal();
+    goal_msg.path = *path;
+    goal_msg.target_spd = target_spd;
 
-      RCLCPP_INFO(this->get_logger(), "Sending goal: target_spd: %f", target_spd);
+    RCLCPP_DEBUG(this->get_logger(), "Sending goal: target_spd: %f", target_spd);
 
-      auto send_goal_options = rclcpp_action::Client<ControlAction>::SendGoalOptions();
-      send_goal_options.goal_response_callback =
-          std::bind(&SimpleLocalPlannerNode::goal_response_callback, this, _1);
-      send_goal_options.feedback_callback =
-          std::bind(&SimpleLocalPlannerNode::feedback_callback, this, _1, _2);
-      send_goal_options.result_callback =
-          std::bind(&SimpleLocalPlannerNode::result_callback, this, _1);
-      this->control_action_client_->async_send_goal(goal_msg, send_goal_options);
-    }
+    auto send_goal_options = rclcpp_action::Client<ControlAction>::SendGoalOptions();
+    send_goal_options.goal_response_callback = std::bind(&SimpleLocalPlannerNode::goal_response_callback, this, _1);
+    send_goal_options.feedback_callback = std::bind(&SimpleLocalPlannerNode::feedback_callback, this, _1, _2);
+    send_goal_options.result_callback = std::bind(&SimpleLocalPlannerNode::result_callback, this, _1);
+    this->control_action_client_->async_send_goal(goal_msg, send_goal_options);
+  }
+
   void SimpleLocalPlannerNode::result_callback(const GoalHandleControlAction::WrappedResult &result)
   {
-    switch (result.code)
-    {
+      num_goals_processing -= 1;
+
+      switch (result.code)
+      {
       case rclcpp_action::ResultCode::SUCCEEDED:
+        RCLCPP_DEBUG(this->get_logger(), "Goal succeed");
         break;
       case rclcpp_action::ResultCode::ABORTED:
-        RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
+        RCLCPP_INFO(this->get_logger(), "Goal was aborted");
         return;
       case rclcpp_action::ResultCode::CANCELED:
-        RCLCPP_ERROR(this->get_logger(), "Goal was canceled");
+        RCLCPP_INFO(this->get_logger(), "Goal was canceled");
         return;
       default:
-        RCLCPP_ERROR(this->get_logger(), "Unknown result code");
+        RCLCPP_INFO(this->get_logger(), "Unknown result code");
         return;
     }
   }
-  void SimpleLocalPlannerNode::feedback_callback(GoalHandleControlAction::SharedPtr, const std::shared_ptr<const ControlAction::Feedback> feedback)
+  void SimpleLocalPlannerNode::feedback_callback(GoalHandleControlAction::SharedPtr goal_handle, const std::shared_ptr<const ControlAction::Feedback> feedback)
   {
-
+    // TODO: if needed, cancel the controller server's action, initiate a new one
+    // RCLCPP_INFO(get_logger(), "Feedback received %d", feedback->curr_index);
   }
   void SimpleLocalPlannerNode::goal_response_callback(std::shared_future<GoalHandleControlAction::SharedPtr> future)
   {
@@ -158,6 +172,7 @@ namespace local_planner
     else
     {
         RCLCPP_DEBUG(this->get_logger(), "Goal accepted by server, waiting for result");
+        num_goals_processing += 1;
     }
   }
   nav_msgs::msg::Path::SharedPtr SimpleLocalPlannerNode::find_trajectory()
@@ -165,35 +180,35 @@ namespace local_planner
     // TODO: implement more advanced path finding algorithm here
 
     // get the transform from map to ego_vehicle
-    geometry_msgs::msg::TransformStamped t;
+    // geometry_msgs::msg::TransformStamped t;
     std::string fromFrameRel = this->latest_odom->header.frame_id;
     std::string toFrameRel = this->latest_odom->child_frame_id;
-    try
-    {
-      t = tf_buffer_->lookupTransform(toFrameRel, fromFrameRel, tf2::TimePointZero);
-    }
-    catch (const tf2::TransformException &ex)
-    {
-      RCLCPP_INFO(
-          this->get_logger(), "Could not transform %s to %s: %s",
-          toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
-      return nullptr;
-    }
+    // try
+    // {
+    //   t = tf_buffer_->lookupTransform(toFrameRel, fromFrameRel, tf2::TimePointZero);
+    // }
+    // catch (const tf2::TransformException &ex)
+    // {
+    //   RCLCPP_INFO(
+    //       this->get_logger(), "Could not transform %s to %s: %s",
+    //       toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+    //   return nullptr;
+    // }
     // construct the message
     std_msgs::msg::Header header;
-    header.frame_id = toFrameRel;
+    header.frame_id = fromFrameRel;//toFrameRel;
     header.stamp = this->get_clock()->now();
 
     nav_msgs::msg::Path path;
     path.header = header;
 
-    geometry_msgs::msg::PoseStamped child_pose;
+    // geometry_msgs::msg::PoseStamped child_pose;
     geometry_msgs::msg::PoseStamped ps;
     ps.header = header;
     ps.pose = *this->latest_waypoint_;
-    tf2::doTransform(ps, child_pose, t);
+    // tf2::doTransform(ps, child_pose, t);
 
-    path.poses.push_back(child_pose);
+    path.poses.push_back(ps);
     return std::make_shared<nav_msgs::msg::Path>(path);
   }
 

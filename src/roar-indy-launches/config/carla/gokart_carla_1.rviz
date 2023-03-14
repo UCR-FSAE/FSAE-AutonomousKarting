@@ -4,12 +4,15 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Mapping1
+        - /Global Options1
         - /Mapping1/Local Map1
         - /Mapping1/Global Map1
         - /Planning1/Global Planning1
-        - /Perception1
-        - /Marker1
+        - /Planning1/Global Planning1/next_waypoint_visualizer1
+        - /Control1
+        - /Control1/PID1
+        - /Control1/PID1/Marker1
+        - /Control1/PID1/Marker1/Topic1
       Splitter Ratio: 0.37792640924453735
     Tree Height: 403
   - Class: rviz_common/Selection
@@ -120,7 +123,7 @@ Visualization Manager:
               Value: true
           Enabled: false
           Name: Global Map
-      Enabled: true
+      Enabled: false
       Name: Mapping
     - Class: rviz_common/Group
       Displays:
@@ -152,6 +155,18 @@ Visualization Manager:
                 History Policy: Keep Last
                 Reliability Policy: Reliable
                 Value: /global_path
+              Value: true
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: next_waypoint_visualizer
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /next_waypoint_visualization
               Value: true
           Enabled: true
           Name: Global Planning
@@ -199,12 +214,12 @@ Visualization Manager:
           Color: 255; 255; 255
           Color Transformer: Intensity
           Decay Time: 0
-          Enabled: true
+          Enabled: false
           Invert Rainbow: false
           Max Color: 255; 255; 255
-          Max Intensity: 0.9941554665565491
+          Max Intensity: 0.9941503405570984
           Min Color: 0; 0; 0
-          Min Intensity: 0.4540828764438629
+          Min Intensity: 0.5283887982368469
           Name: CenterLidar
           Position Transformer: XYZ
           Selectable: true
@@ -219,7 +234,7 @@ Visualization Manager:
             Value: /carla/ego_vehicle/center_lidar
           Use Fixed Frame: true
           Use rainbow: true
-          Value: true
+          Value: false
       Enabled: true
       Name: Perception
     - Class: rviz_common/Group
@@ -232,6 +247,8 @@ Visualization Manager:
             ego_vehicle:
               Value: true
             ego_vehicle/center_lidar:
+              Value: true
+            ego_vehicle/collision:
               Value: true
             ego_vehicle/front_depth:
               Value: true
@@ -255,6 +272,8 @@ Visualization Manager:
               ego_vehicle:
                 ego_vehicle/center_lidar:
                   {}
+                ego_vehicle/collision:
+                  {}
                 ego_vehicle/front_depth:
                   {}
                 ego_vehicle/front_rgb:
@@ -269,18 +288,26 @@ Visualization Manager:
           Value: true
       Enabled: true
       Name: Localization
-    - Class: rviz_default_plugins/Marker
+    - Class: rviz_common/Group
+      Displays:
+        - Class: rviz_common/Group
+          Displays:
+            - Class: rviz_default_plugins/Marker
+              Enabled: true
+              Name: Marker
+              Namespaces:
+                {}
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /pid_controller/next_waypoint_visualization
+              Value: true
+          Enabled: true
+          Name: PID
       Enabled: true
-      Name: Marker
-      Namespaces:
-        {}
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /pid_controller/next_waypoint_visualization
-      Value: true
+      Name: Control
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -324,25 +351,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 29.10431480407715
+      Distance: 53.24488830566406
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 4.723527908325195
-        Y: -0.19447380304336548
-        Z: 1.6568427085876465
+        X: -6.712060451507568
+        Y: -3.330829381942749
+        Z: 10.001399993896484
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4753982424736023
+      Pitch: 0.9360332489013672
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.155412197113037
+      Yaw: 3.993166446685791
     Saved: ~
 Window Geometry:
   Displays:
