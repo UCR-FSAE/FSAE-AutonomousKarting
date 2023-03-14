@@ -16,6 +16,7 @@
   <depend>nav_2d_utils</depend>
   <depend>ackermann_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>rapidjson</depend>
   <depend>visualization_msgs</depend>
   
 

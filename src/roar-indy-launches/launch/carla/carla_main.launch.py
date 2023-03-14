@@ -147,7 +147,7 @@ def generate_launch_description():
     )
     simple_local_planner_launcher = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(simple_local_planner_file_path.as_posix()),
-        launch_arguments={"loop_rate": "10.0", "target_spd": "1.0"}.items(),
+        launch_arguments={"loop_rate": "10.0", "target_spd": "13.0"}.items(),
     )
     roar_carla_control_path: Path = (
         Path(get_package_share_directory("roar_carla"))

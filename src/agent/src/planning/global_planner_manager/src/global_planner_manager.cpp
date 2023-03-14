@@ -33,11 +33,7 @@ namespace gokart_planner
   GlobalPlannerManager::on_configure(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_INFO(get_logger(), "Configuring");
-    if (this->get_parameter("debug").as_bool())
-    {
-      this->next_waypoint_visualization_publisher_ = this->create_publisher<visualization_msgs::msg::Marker>("/next_waypoint_visualization", 10);
-    }
-    
+    this->next_waypoint_visualization_publisher_ = this->create_publisher<visualization_msgs::msg::Marker>("/next_waypoint_visualization", 10);    
 
     this->next_waypoint_publisher_ = this->create_publisher<geometry_msgs::msg::Pose>("/next_waypoint", 10);
     this->global_path_publisher_ = this->create_publisher<nav_msgs::msg::Path>("/global_path", 10);
@@ -66,11 +62,7 @@ namespace gokart_planner
   GlobalPlannerManager::on_activate(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_INFO(get_logger(), "Activating");
-    if (this->next_waypoint_visualization_publisher_)
-    {
-      this->next_waypoint_visualization_publisher_->on_activate();
-    }
-    
+    this->next_waypoint_visualization_publisher_->on_activate();
 
     if (this->current_manager_status_ != ManagerStatus::GoalOk)
     {
@@ -86,10 +78,9 @@ namespace gokart_planner
   GlobalPlannerManager::on_deactivate(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_INFO(get_logger(), "Deactivating");
-    if (this->next_waypoint_visualization_publisher_)
-    {
-      this->next_waypoint_visualization_publisher_->on_deactivate();
-    }
+
+    this->next_waypoint_visualization_publisher_->on_deactivate();
+    
     this->next_waypoint_publisher_->on_deactivate();
     this->global_path_publisher_->on_deactivate();
     return nav2_util::CallbackReturn::SUCCESS;
@@ -116,8 +107,6 @@ namespace gokart_planner
     using namespace std::placeholders;
     auto goal_msg = WaypointFollowerAction::Goal();
     goal_msg.poses = p.poses;
-    RCLCPP_INFO(this->get_logger(), "Sending goal");
-
     auto send_goal_options = rclcpp_action::Client<WaypointFollowerAction>::SendGoalOptions();
     send_goal_options.goal_response_callback =
         std::bind(&GlobalPlannerManager::goal_response_callback, this, _1);
@@ -145,39 +134,38 @@ namespace gokart_planner
   }
   void GlobalPlannerManager::p_publish_debug_marker(const geometry_msgs::msg::Pose pose)
   {
-    visualization_msgs::msg::Marker msg;
-    geometry_msgs::msg::Vector3 scale;
-    std_msgs::msg::ColorRGBA color;
-    color.a = 0.5;
-    color.r = 1.0;
-    color.g = 1.0;
-    color.b = 1.0;
+    if (this->get_parameter("debug").as_bool())
+    {
+      visualization_msgs::msg::Marker marker;
+      marker.header.frame_id = "map";
+      marker.header.stamp = this->get_clock()->now();
+      marker.ns = "global_planner_manager";
+      marker.id = 0;
+      marker.type = visualization_msgs::msg::Marker::SPHERE;
+      marker.action = visualization_msgs::msg::Marker::ADD;
+      marker.pose = pose;
+      marker.scale.x = 10.0;
+      marker.scale.y = 10.0;
+      marker.scale.z = 10.0;
+      marker.color.r = 1.0;
+      marker.color.g = 0.0;
+      marker.color.b = 0.0;
+      marker.color.a = 1.0;
+      marker.lifetime = rclcpp::Duration(0, 1000000000); // 1 second
+      this->next_waypoint_visualization_publisher_->publish(marker);
+      RCLCPP_INFO(get_logger(), "Publishing");
+    }
+  }
 
-    scale.x = 0.5;
-    scale.y = 0.5;
-    scale.z = 0.5;
-    msg.pose = pose;
-    msg.scale = scale;
-    msg.type = visualization_msgs::msg::Marker::SPHERE;
-    msg.header.stamp = this->get_clock()->now();
-    msg.header.frame_id = "map";
-    msg.color = color;
-
-    this->next_waypoint_visualization_publisher_->publish(msg);
-  } 
-  
   void GlobalPlannerManager::feedback_callback(GoalHandleWaypointFollower::SharedPtr ptr, const std::shared_ptr<const WaypointFollowerAction::Feedback> feedback)
   {
     uint32_t waypoint_index = feedback->current_waypoint;
-
     if (waypoint_index < this->waypoints_->poses.size())
     {
       geometry_msgs::msg::Pose pose = this->waypoints_->poses[waypoint_index].pose;
       this->next_waypoint_publisher_->publish(pose);
-      if (this->next_waypoint_visualization_publisher_)
-      {
-        this->p_publish_debug_marker(pose);
-      }
+
+      this->p_publish_debug_marker(pose);
       
       return;
     } 

@@ -16,10 +16,11 @@
                 "${workspaceFolder}/install/",
                 "${workspaceFolder}/src/hardware/src/control_converter/include",
                 "${workspaceFolder}/install/control_interfaces/include",
-                "/home/michael/carla-ros-bridge/install/carla_msgs/include/"
+                "/home/michael/carla-ros-bridge/install/carla_msgs/include/",
+                "/opt/ros/foxy/include/cartographer/common"
             ],
             "defines": [],
-            "compilerPath": "/usr/bin/clang",
+            "compilerPath": "/usr/bin/cpp",
             "cStandard": "c17",
             "cppStandard": "c++14",
             "intelliSenseMode": "linux-clang-x64"
