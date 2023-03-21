@@ -17,7 +17,10 @@
                 "${workspaceFolder}/src/hardware/src/control_converter/include",
                 "${workspaceFolder}/install/control_interfaces/include",
                 "/home/michael/carla-ros-bridge/install/carla_msgs/include/",
-                "/opt/ros/foxy/include/cartographer/common"
+                "/opt/ros/foxy/include/cartographer/common",
+                "/usr/include/eigen3",
+                "/home/roar/git/roar-gokart-ws/src/agent/src/planning/global_planner_manager/include",
+                "/home/roar/git/roar-gokart-ws/src/agent/src/control/pid_control/include/pid_control"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/cpp",

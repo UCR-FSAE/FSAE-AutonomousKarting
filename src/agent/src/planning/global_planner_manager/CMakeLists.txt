@@ -17,6 +17,7 @@ find_package(nav2_waypoint_follower REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(trajectory_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 link_libraries(stdc++fs)
 
@@ -63,6 +64,7 @@ ament_target_dependencies(waypoint_follower
   nav2_msgs
   nav2_util
   tf2_ros
+  visualization_msgs
 )
 target_include_directories(waypoint_follower PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

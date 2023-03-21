@@ -17,6 +17,10 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp_components/register_node_macro.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
+#include "visualization_msgs/msg/marker.hpp"
+#include <tf2_ros/transform_listener.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace gokart_planner
 {
@@ -109,6 +113,14 @@ namespace gokart_planner
              *
              * @param msg The incoming odometry message.
              */
+            double get_current_speed(const geometry_msgs::msg::Twist &current_speed);
+            /**
+             * @brief Handle an incoming odometry message.
+             *
+             * This function is called whenever an odometry message is received. It updates the latest odometry message stored in the class.
+             *
+             * @param msg The incoming odometry message.
+             */
             void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
             // variables
@@ -116,9 +128,21 @@ namespace gokart_planner
             rclcpp_action::Server<WaypointFollowerAction>::SharedPtr action_server_;
             float lookahead_dist;
 
+            std::string file_path;
+            std::string line;
+            int low_bound;
+            int high_bound;
+            int dist_from_file;
+            int pos_for_file;
+            std::string token_for_file;
+            std::vector<std::vector<int>> speed_bounds_and_lookahead_distance;
             rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr vehicle_odom_sub_;
             std::shared_ptr<nav_msgs::msg::Odometry> latest_odom_msg;
             std::mutex odom_mutex_;
+            visualization_msgs::msg::Marker vis_marker_;
+            rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr vis_marker_publisher_;
+            std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+            std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
     };
 
 } // namespace gokart_planner
