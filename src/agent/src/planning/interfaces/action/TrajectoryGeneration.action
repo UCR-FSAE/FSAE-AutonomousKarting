@@ -1,0 +1,13 @@
+# Trajectory Generation interface
+
+# Request
+
+nav2_msgs/Costmap costmap
+nav_msgs/Odometry odom
+---
+
+# Result
+Trajectories trajectories
+---
+# Feedback
+nav_msgs/Path trajectory
