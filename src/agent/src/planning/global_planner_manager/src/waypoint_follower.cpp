@@ -209,9 +209,9 @@ namespace gokart_planner
             vis_marker_.pose = transformed_waypoint_pose.pose;
 
             // Set the marker scale
-            vis_marker_.scale.x = 2.0;
+            vis_marker_.scale.x = 1.0;
             vis_marker_.scale.y = 2.0;
-            vis_marker_.scale.z = 2.0;
+            vis_marker_.scale.z = 1.0;
 
             // Set the marker color
             vis_marker_.color.r = 1.0;
@@ -231,7 +231,6 @@ namespace gokart_planner
             }
             // publish the next waypoint index
             feedback->current_waypoint = next_index;
-            RCLCPP_INFO(get_logger(), "Waypoint published: %d", next_index);
             goal_handle->publish_feedback(feedback);
             // sleep
             loop_rate.sleep();

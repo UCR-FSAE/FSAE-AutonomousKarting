@@ -14,10 +14,18 @@ from launch.actions import DeclareLaunchArgument
 
 
 def generate_launch_description():
+    base_path = Path(get_package_share_directory("global_planner_manager"))
+
     ld = launch.LaunchDescription()
     waypoint_file_path = DeclareLaunchArgument(
         "waypoint_file_path",
         default_value="./src/roar-indy-launches/config/carla_waypoints.txt",
+    )
+    speed_zone_and_lookahead_distance_path = DeclareLaunchArgument(
+        "speed_zone_and_lookahead_distance_path",
+        default_value=(
+            base_path / "params" / "lookahead_distance_vs_speed.txt"
+        ).as_posix(),
     )
     lookahead_dist = DeclareLaunchArgument(
         "lookahead_dist",
@@ -54,6 +62,9 @@ def generate_launch_description():
             {
                 "lookahead_dist": LaunchConfiguration("lookahead_dist"),
                 "loop_rate": LaunchConfiguration("loop_rate"),
+                "speed_zone_and_lookahead_distance": LaunchConfiguration(
+                    "speed_zone_and_lookahead_distance_path"
+                ),
             }
         ],
         remappings=[
@@ -65,6 +76,7 @@ def generate_launch_description():
     )
     # args
     ld.add_action(waypoint_file_path)
+    ld.add_action(speed_zone_and_lookahead_distance_path)
     ld.add_action(lookahead_dist)
     ld.add_action(odom_topic)
     ld.add_action(waypoint_follower_server_loop_rate)
