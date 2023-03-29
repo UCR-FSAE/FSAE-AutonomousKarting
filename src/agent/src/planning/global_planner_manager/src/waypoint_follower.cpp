@@ -210,7 +210,7 @@ namespace gokart_planner
 
             // Set the marker scale
             vis_marker_.scale.x = 1.0;
-            vis_marker_.scale.y = 2.0;
+            vis_marker_.scale.y = 1.0;
             vis_marker_.scale.z = 1.0;
 
             // Set the marker color
