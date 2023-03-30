@@ -34,4 +34,6 @@ target_include_directories(local_planner_manager_node PUBLIC
 install(TARGETS local_planner_manager_node
   DESTINATION lib/${PROJECT_NAME})
 
+install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+
 ament_package()
