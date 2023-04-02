@@ -14,17 +14,16 @@ namespace local_planning
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_configure(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_INFO(this->get_logger(), "on_configure");
+
     this->next_waypoint_sub_ = this->create_subscription<geometry_msgs::msg::Pose>(
         "/next_waypoint", rclcpp::SystemDefaultsQoS(),
         std::bind(&LocalPlannerManagerNode::onLatestWaypointReceived, this, std::placeholders::_1));
     this->odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
         "/carla/ego_vehicle/odometry", rclcpp::SystemDefaultsQoS(),
         std::bind(&LocalPlannerManagerNode::onLatestOdomReceived, this, std::placeholders::_1));
-    costmap_client_node = rclcpp::Node::make_shared("costmap_client");
-    costmap_client = costmap_client_node->create_client<GetCostmap>("/local_costmap/get_costmap");
-
-    costmap_update_timer = create_wall_timer(std::chrono::milliseconds(int(this->get_parameter("loop_rate").as_double()*1000)), 
-    std::bind(&LocalPlannerManagerNode::costMapUpdateTimerCallback, this));
+    this->costmap_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+        "/local_costmap/costmap", rclcpp::SystemDefaultsQoS(),
+        std::bind(&LocalPlannerManagerNode::onLatestCostmapReceived, this, std::placeholders::_1));
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -32,13 +31,17 @@ namespace local_planning
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_activate(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_INFO(this->get_logger(), "on_activate");
-
+    double loop_rate = this->get_parameter("loop_rate").as_double();
+    RCLCPP_INFO(this->get_logger(), "loop_rate: %.3f", loop_rate);
+    execute_timer = create_wall_timer(std::chrono::milliseconds(int(loop_rate * 1000)),
+                                      std::bind(&LocalPlannerManagerNode::execute, this));
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_deactivate(const rclcpp_lifecycle::State &state)
   {
-    RCLCPP_INFO(this->get_logger(), "Deactivating");
+    RCLCPP_INFO(this->get_logger(), "on_deactivate");
+    execute_timer->cancel();
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -46,6 +49,9 @@ namespace local_planning
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_cleanup(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_INFO(this->get_logger(), "on_cleanup");
+    this->next_waypoint_sub_ = nullptr;
+    this->odom_sub_ = nullptr;
+    this->costmap_sub_ = nullptr;
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -61,45 +67,37 @@ namespace local_planning
   {
     std::lock_guard<std::mutex> lock(waypoint_mutex);
     this->latest_waypoint_ = msg;
+    // RCLCPP_INFO(this->get_logger(), "latest_waypoint_ received");
   }
 
   void LocalPlannerManagerNode::onLatestOdomReceived(nav_msgs::msg::Odometry::SharedPtr msg)
   {
     std::lock_guard<std::mutex> lock(odom_mutex_);
     this->latest_odom = msg;
+    // RCLCPP_INFO(this->get_logger(), "odom received");
   }
 
-  void LocalPlannerManagerNode::costmapCallback(const std::shared_future<GetCostmap::Response> &future_response)
+  void LocalPlannerManagerNode::onLatestCostmapReceived(nav_msgs::msg::OccupancyGrid::SharedPtr msg)
   {
-    std::lock_guard<std::mutex> lock(costmap_mutex);
-    auto response = future_response.get();
-    latest_costmap = std::make_shared<nav2_msgs::msg::Costmap>(response.map);
-    RCLCPP_INFO(this->get_logger(), "Response");
+    std::lock_guard<std::mutex> lock(occu_map_mutex);
+    this->latest_occu_map = msg;
+  }
+  void LocalPlannerManagerNode::execute()
+  {
+    std::lock_guard<std::mutex> occumap_lock(occu_map_mutex);
+    std::lock_guard<std::mutex> odom_lock(odom_mutex_);
+    std::lock_guard<std::mutex> waypoint_lock(waypoint_mutex);
+
+    if (this->didReceiveAllMessages())
+    {
+      RCLCPP_INFO(this->get_logger(), "STEPPING");
+    }
+
   }
 
-  void LocalPlannerManagerNode::getLatestCostmap()
+  bool LocalPlannerManagerNode::didReceiveAllMessages()
   {
-    auto request = std::make_shared<nav2_msgs::srv::GetCostmap::Request>();
-    request->specs.layer = "obstacle_layer";
-    request->specs.resolution = 1.0;
-    request->specs.size_x = 50;
-    request->specs.size_y = 80;
-    request->specs.origin = this->latest_odom->pose.pose;
-    request->specs.update_time = this->get_clock()->now();
-    auto future_result = costmap_client->async_send_request(request);
-    if (rclcpp::spin_until_future_complete(costmap_client_node, future_result, std::chrono::nanoseconds(500)) !=
-        rclcpp::FutureReturnCode::SUCCESS)
-        {
-            // failed
-            RCLCPP_INFO(this->get_logger(), "Failed");
-        } else {
-            // success
-            RCLCPP_INFO(this->get_logger(), "Success");
-        }
-  }
-  void LocalPlannerManagerNode::costMapUpdateTimerCallback()
-  {
-    this->getLatestCostmap();
+    return this->latest_occu_map != nullptr && this->latest_odom != nullptr && this->latest_waypoint_ != nullptr; 
   }
 
 } // local_planning

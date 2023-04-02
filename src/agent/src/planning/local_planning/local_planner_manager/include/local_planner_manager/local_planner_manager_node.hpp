@@ -3,10 +3,13 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include <nav2_msgs/msg/costmap_meta_data.hpp>
 #include <nav2_msgs/srv/get_costmap.hpp>
+#include <nav2_msgs/srv/clear_entire_costmap.hpp>
+#include <nav_msgs/msg/occupancy_grid.hpp>
 
 #ifndef LOCAL_PLANNER_MANAGER_NODE_HPP_
 #define LOCAL_PLANNER_MANAGER_NODE_HPP_
 using GetCostmap = nav2_msgs::srv::GetCostmap;
+using ClearCostmap = nav2_msgs::srv::ClearEntireCostmap;
 
 namespace local_planning
 {
@@ -28,12 +31,11 @@ namespace local_planning
 
         nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State &state) override;
 
-        void execute();
-
+        bool didReceiveAllMessages();
 
         /* timer */
-        void costMapUpdateTimerCallback();
-        rclcpp::TimerBase::SharedPtr costmap_update_timer;
+        void execute();
+        rclcpp::TimerBase::SharedPtr execute_timer;
 
         /* Waypoint */
         std::shared_ptr<geometry_msgs::msg::Pose> latest_waypoint_;
@@ -50,13 +52,18 @@ namespace local_planning
         void onLatestOdomReceived(nav_msgs::msg::Odometry::SharedPtr msg);
 
         /* Costmap */
-        std::shared_ptr<rclcpp::Node> costmap_client_node;
+        rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::ConstSharedPtr
+            costmap_sub_;
+        void onLatestCostmapReceived(nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+        std::shared_ptr<nav_msgs::msg::OccupancyGrid> latest_occu_map;
+        std::mutex occu_map_mutex;
 
-        rclcpp::Client<GetCostmap>::SharedPtr costmap_client;
-        void getLatestCostmap();
-        void costmapCallback(const std::shared_future<GetCostmap::Response> &future_response);
-        std::shared_ptr<nav2_msgs::msg::Costmap> latest_costmap;
-        std::mutex costmap_mutex;
+        // std::shared_ptr<rclcpp::Node> costmap_client_node;
+        // rclcpp::Client<ClearCostmap>::SharedPtr costmap_client;
+        // void getLatestCostmap();
+        // void costmapCallback(const std::shared_future<ClearCostmap::Response> &future_response);
+        // std::shared_ptr<nav2_msgs::msg::Costmap> latest_costmap;
+        // std::mutex costmap_mutex;
     };
 } // local_planning
 #endif

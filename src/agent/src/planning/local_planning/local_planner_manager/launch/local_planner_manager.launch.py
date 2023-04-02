@@ -12,38 +12,39 @@ from pathlib import Path
 
 def generate_launch_description():
     ld = launch.LaunchDescription()
-    base_path = Path(get_package_share_directory("local_planner_manager"))
-
+    # loop_rate_args = DeclareLaunchArgument(
+    #     "loop_rate",
+    #     default_value="0.5",
+    #     description="loop rate",
+    # )
     local_planner_manager_node = Node(
         name="local_planner_manager_node",
         executable="local_planner_manager_node",
         package="local_planner_manager",
-        # parameters=[
-        #     {
-        #         "loop_rate": LaunchConfiguration("loop_rate"),
-        #         "debug": LaunchConfiguration("debug"),
-        #         "pid_config_file_path": LaunchConfiguration("pid_config_file_path"),
-        #     }
-        # ],
+        parameters=[
+            {
+                "loop_rate": LaunchConfiguration("loop_rate"),
+            }
+        ],
     )
     lifecycle_manager = Node(
         package="nav2_lifecycle_manager",
         executable="lifecycle_manager",
-        name="lifecycle_manager_navigation",
+        name="lifecycle_manager_local_planning",
         output="screen",
         parameters=[
             {"use_sim_time": True},
             {"autostart": True},
             {
                 "node_names": [
-                    "/local_planner_manager_node",
+                    "/local_planner/local_planner_manager_node",
                 ]
             },
         ],
     )
 
     # args
-
+    # ld.add_action(loop_rate_args)
     # node
     ld.add_action(local_planner_manager_node)
     ld.add_action(lifecycle_manager)

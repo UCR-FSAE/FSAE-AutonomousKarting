@@ -9,9 +9,6 @@ namespace costmap_node_manager
       : LifecycleNode("costmap_node_manager", "", true)
   {
     RCLCPP_INFO(get_logger(), "Creating Costmap Manager Node");
-    costmap_ros_ = std::make_shared<nav2_costmap_2d::Costmap2DROS>(
-        "local_costmap", std::string{get_namespace()}, "local_costmap");
-    costmap_thread_ = std::make_unique<nav2_util::NodeThread>(costmap_ros_);
   }
 
   CostmapNodeManager::~CostmapNodeManager()
@@ -23,6 +20,9 @@ namespace costmap_node_manager
   CostmapNodeManager::on_configure(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_INFO(get_logger(), "Configuring");
+    costmap_ros_ = std::make_shared<nav2_costmap_2d::Costmap2DROS>(
+        "local_costmap", std::string{get_namespace()}, "local_costmap");
+    costmap_thread_ = std::make_unique<nav2_util::NodeThread>(costmap_ros_);
     costmap_ros_->configure();
     return nav2_util::CallbackReturn::SUCCESS;
   }
