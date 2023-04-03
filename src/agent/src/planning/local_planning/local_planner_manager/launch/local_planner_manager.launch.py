@@ -12,18 +12,14 @@ from pathlib import Path
 
 def generate_launch_description():
     ld = launch.LaunchDescription()
-    # loop_rate_args = DeclareLaunchArgument(
-    #     "loop_rate",
-    #     default_value="0.5",
-    #     description="loop rate",
-    # )
+
     local_planner_manager_node = Node(
         name="local_planner_manager_node",
         executable="local_planner_manager_node",
         package="local_planner_manager",
         parameters=[
             {
-                "loop_rate": LaunchConfiguration("loop_rate"),
+                "manager_rate": LaunchConfiguration("manager_rate", default="0.5"),
             }
         ],
     )
@@ -44,7 +40,6 @@ def generate_launch_description():
     )
 
     # args
-    # ld.add_action(loop_rate_args)
     # node
     ld.add_action(local_planner_manager_node)
     ld.add_action(lifecycle_manager)

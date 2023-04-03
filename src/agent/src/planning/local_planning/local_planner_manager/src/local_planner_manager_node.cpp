@@ -4,7 +4,7 @@ namespace local_planning
 {
   LocalPlannerManagerNode::LocalPlannerManagerNode() : LifecycleNode("manager_node", "local_planner", true)
   {
-    this->declare_parameter("loop_rate", 0.5);
+    this->declare_parameter("manager_rate", 0.5);
   }
 
   LocalPlannerManagerNode ::~LocalPlannerManagerNode()
@@ -31,7 +31,7 @@ namespace local_planning
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_activate(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_INFO(this->get_logger(), "on_activate");
-    double loop_rate = this->get_parameter("loop_rate").as_double();
+    double loop_rate = this->get_parameter("manager_rate").as_double();
     RCLCPP_INFO(this->get_logger(), "loop_rate: %.3f", loop_rate);
     execute_timer = create_wall_timer(std::chrono::milliseconds(int(loop_rate * 1000)),
                                       std::bind(&LocalPlannerManagerNode::execute, this));
