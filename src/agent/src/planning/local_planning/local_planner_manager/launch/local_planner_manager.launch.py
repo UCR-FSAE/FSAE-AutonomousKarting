@@ -19,7 +19,7 @@ def generate_launch_description():
         package="local_planner_manager",
         parameters=[
             {
-                "manager_rate": LaunchConfiguration("manager_rate", default="0.5"),
+                "manager_rate": LaunchConfiguration("manager_rate", default="0.2"),
             }
         ],
     )

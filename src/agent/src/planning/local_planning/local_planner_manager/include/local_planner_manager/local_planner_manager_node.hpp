@@ -31,11 +31,14 @@ namespace local_planning
 
         nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State &state) override;
 
-        bool didReceiveAllMessages();
 
-        /* timer */
+        /* execution */
         void execute();
+        
         rclcpp::TimerBase::SharedPtr execute_timer;
+        int num_execution = 0;
+        bool didReceiveAllMessages();
+        bool canExecute();
 
         /* Waypoint */
         std::shared_ptr<geometry_msgs::msg::Pose> latest_waypoint_;
@@ -58,12 +61,6 @@ namespace local_planning
         std::shared_ptr<nav_msgs::msg::OccupancyGrid> latest_occu_map;
         std::mutex occu_map_mutex;
 
-        // std::shared_ptr<rclcpp::Node> costmap_client_node;
-        // rclcpp::Client<ClearCostmap>::SharedPtr costmap_client;
-        // void getLatestCostmap();
-        // void costmapCallback(const std::shared_future<ClearCostmap::Response> &future_response);
-        // std::shared_ptr<nav2_msgs::msg::Costmap> latest_costmap;
-        // std::mutex costmap_mutex;
     };
 } // local_planning
 #endif

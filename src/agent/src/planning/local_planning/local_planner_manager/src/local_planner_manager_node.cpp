@@ -90,9 +90,21 @@ namespace local_planning
 
     if (this->didReceiveAllMessages())
     {
+      num_execution += 1;
       RCLCPP_INFO(this->get_logger(), "STEPPING");
     }
 
+    num_execution -= 1;
+
+  }
+
+  bool LocalPlannerManagerNode::canExecute()
+  {
+    if (this->didReceiveAllMessages() && num_execution < 1)
+    {
+      return true; 
+    } 
+    return false;
   }
 
   bool LocalPlannerManagerNode::didReceiveAllMessages()
