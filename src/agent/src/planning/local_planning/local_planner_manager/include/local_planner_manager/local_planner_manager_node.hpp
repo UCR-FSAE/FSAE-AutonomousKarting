@@ -6,12 +6,12 @@
 #include <nav2_msgs/srv/clear_entire_costmap.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <trajectory_generator/trajectory_generator_ros.hpp>
+#include <trajectory_scorer/trajectory_scorer_ros.hpp>
+#include <trajectory_picker/trajectory_picker_ros.hpp>
 
 
 #ifndef LOCAL_PLANNER_MANAGER_NODE_HPP_
 #define LOCAL_PLANNER_MANAGER_NODE_HPP_
-using GetCostmap = nav2_msgs::srv::GetCostmap;
-using ClearCostmap = nav2_msgs::srv::ClearEntireCostmap;
 
 namespace local_planning
 {
@@ -66,6 +66,14 @@ namespace local_planning
         /* Trajectory Generator */
         std::shared_ptr<local_planning::TrajectoryGeneratorROS> trajectory_generator_node_;
         std::unique_ptr<nav2_util::NodeThread> trajectory_generator_thread_;
+
+        /* Trajectory Scorer */
+        std::shared_ptr<local_planning::TrajectoryScorerROS> trajectory_scorer_node_;
+        std::unique_ptr<nav2_util::NodeThread> trajectory_scorer_thread_;
+
+        /* Trajectory Picker */
+        std::shared_ptr<local_planning::TrajectoryPickerROS> trajectory_picker_node_;
+        std::unique_ptr<nav2_util::NodeThread> trajectory_picker_thread_;
     };
 } // local_planning
 #endif

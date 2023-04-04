@@ -18,6 +18,9 @@ find_package(tf2_ros REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(trajectory_generator REQUIRED)
+find_package(trajectory_scorer REQUIRED)
+find_package(trajectory_picker REQUIRED)
+
 find_package(planning_interfaces REQUIRED)
 
 add_executable(local_planner_manager_node src/local_planner_manager_node.cpp)
@@ -29,6 +32,8 @@ ament_target_dependencies(local_planner_manager_node
   nav2_util
   nav2_core
   trajectory_generator
+  trajectory_scorer
+  trajectory_picker
   planning_interfaces
 )
 target_include_directories(local_planner_manager_node PUBLIC

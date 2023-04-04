@@ -28,6 +28,14 @@ namespace local_planning
     trajectory_generator_node_ = std::make_shared<local_planning::TrajectoryGeneratorROS>("generator", std::string{get_namespace()}, "trajectory");
     trajectory_generator_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_generator_node_);
     trajectory_generator_node_->configure();
+
+    trajectory_scorer_node_ = std::make_shared<local_planning::TrajectoryScorerROS>("scorer", std::string{get_namespace()}, "trajectory");
+    trajectory_scorer_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_scorer_node_);
+    trajectory_scorer_node_->configure();
+
+    trajectory_picker_node_ = std::make_shared<local_planning::TrajectoryPickerROS>("picker", std::string{get_namespace()}, "trajectory");
+    trajectory_picker_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_picker_node_);
+    trajectory_picker_node_->configure();
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
@@ -39,6 +47,8 @@ namespace local_planning
     execute_timer = create_wall_timer(std::chrono::milliseconds(int(loop_rate * 1000)),
                                       std::bind(&LocalPlannerManagerNode::execute, this));
     trajectory_generator_node_->activate();
+    trajectory_scorer_node_->activate();
+    trajectory_picker_node_->activate();
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
@@ -47,7 +57,8 @@ namespace local_planning
     RCLCPP_INFO(this->get_logger(), "on_deactivate");
     execute_timer->cancel();
     trajectory_generator_node_->deactivate();
-
+    trajectory_scorer_node_->deactivate();
+    trajectory_picker_node_->deactivate();
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
@@ -58,6 +69,8 @@ namespace local_planning
     this->odom_sub_ = nullptr;
     this->costmap_sub_ = nullptr;
     trajectory_generator_node_->cleanup();
+    trajectory_scorer_node_->cleanup();
+    trajectory_picker_node_->cleanup();
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -66,7 +79,8 @@ namespace local_planning
   {
     RCLCPP_INFO(this->get_logger(), "on_shutdown");
     trajectory_generator_node_->shutdown();
-
+    trajectory_scorer_node_->shutdown();
+    trajectory_picker_node_->shutdown();
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
