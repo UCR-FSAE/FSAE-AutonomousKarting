@@ -17,6 +17,8 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(trajectory_generator REQUIRED)
+find_package(planning_interfaces REQUIRED)
 
 add_executable(local_planner_manager_node src/local_planner_manager_node.cpp)
 ament_target_dependencies(local_planner_manager_node
@@ -26,6 +28,8 @@ ament_target_dependencies(local_planner_manager_node
   nav2_msgs
   nav2_util
   nav2_core
+  trajectory_generator
+  planning_interfaces
 )
 target_include_directories(local_planner_manager_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

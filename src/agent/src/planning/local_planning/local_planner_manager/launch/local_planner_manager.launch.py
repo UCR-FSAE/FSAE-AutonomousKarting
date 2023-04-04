@@ -14,7 +14,7 @@ def generate_launch_description():
     ld = launch.LaunchDescription()
 
     local_planner_manager_node = Node(
-        name="local_planner_manager_node",
+        name="manager",
         executable="local_planner_manager_node",
         package="local_planner_manager",
         parameters=[
@@ -23,6 +23,7 @@ def generate_launch_description():
             }
         ],
     )
+
     lifecycle_manager = Node(
         package="nav2_lifecycle_manager",
         executable="lifecycle_manager",
@@ -33,15 +34,14 @@ def generate_launch_description():
             {"autostart": True},
             {
                 "node_names": [
-                    "/local_planner/local_planner_manager_node",
+                    "/local_planner/manager",
                 ]
             },
         ],
     )
 
-    # args
     # node
     ld.add_action(local_planner_manager_node)
-    ld.add_action(lifecycle_manager)
+    # ld.add_action(lifecycle_manager)
 
     return ld

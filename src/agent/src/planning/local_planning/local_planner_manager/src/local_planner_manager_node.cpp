@@ -2,7 +2,7 @@
 
 namespace local_planning
 {
-  LocalPlannerManagerNode::LocalPlannerManagerNode() : LifecycleNode("manager_node", "local_planner", true)
+  LocalPlannerManagerNode::LocalPlannerManagerNode() : LifecycleNode("manager", "local_planner", true)
   {
     this->declare_parameter("manager_rate", 0.5);
   }
@@ -25,6 +25,9 @@ namespace local_planning
         "/local_costmap/costmap", rclcpp::SystemDefaultsQoS(),
         std::bind(&LocalPlannerManagerNode::onLatestCostmapReceived, this, std::placeholders::_1));
 
+    trajectory_generator_node_ = std::make_shared<local_planning::TrajectoryGeneratorROS>("generator", std::string{get_namespace()}, "trajectory");
+    trajectory_generator_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_generator_node_);
+    trajectory_generator_node_->configure();
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
@@ -35,6 +38,7 @@ namespace local_planning
     RCLCPP_INFO(this->get_logger(), "loop_rate: %.3f", loop_rate);
     execute_timer = create_wall_timer(std::chrono::milliseconds(int(loop_rate * 1000)),
                                       std::bind(&LocalPlannerManagerNode::execute, this));
+    trajectory_generator_node_->activate();
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
@@ -42,6 +46,7 @@ namespace local_planning
   {
     RCLCPP_INFO(this->get_logger(), "on_deactivate");
     execute_timer->cancel();
+    trajectory_generator_node_->deactivate();
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -52,6 +57,7 @@ namespace local_planning
     this->next_waypoint_sub_ = nullptr;
     this->odom_sub_ = nullptr;
     this->costmap_sub_ = nullptr;
+    trajectory_generator_node_->cleanup();
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -59,6 +65,7 @@ namespace local_planning
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_shutdown(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_INFO(this->get_logger(), "on_shutdown");
+    trajectory_generator_node_->shutdown();
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -91,7 +98,7 @@ namespace local_planning
     if (this->didReceiveAllMessages())
     {
       num_execution += 1;
-      RCLCPP_INFO(this->get_logger(), "STEPPING");
+      // RCLCPP_INFO(this->get_logger(), "STEPPING");
     }
 
     num_execution -= 1;

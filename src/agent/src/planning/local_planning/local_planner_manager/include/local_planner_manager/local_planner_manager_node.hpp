@@ -5,6 +5,8 @@
 #include <nav2_msgs/srv/get_costmap.hpp>
 #include <nav2_msgs/srv/clear_entire_costmap.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
+#include <trajectory_generator/trajectory_generator_ros.hpp>
+
 
 #ifndef LOCAL_PLANNER_MANAGER_NODE_HPP_
 #define LOCAL_PLANNER_MANAGER_NODE_HPP_
@@ -61,6 +63,9 @@ namespace local_planning
         std::shared_ptr<nav_msgs::msg::OccupancyGrid> latest_occu_map;
         std::mutex occu_map_mutex;
 
+        /* Trajectory Generator */
+        std::shared_ptr<local_planning::TrajectoryGeneratorROS> trajectory_generator_node_;
+        std::unique_ptr<nav2_util::NodeThread> trajectory_generator_thread_;
     };
 } // local_planning
 #endif
