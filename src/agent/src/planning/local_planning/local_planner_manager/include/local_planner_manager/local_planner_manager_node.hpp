@@ -57,14 +57,15 @@ namespace local_planning
         void onLatestOdomReceived(nav_msgs::msg::Odometry::SharedPtr msg);
 
         /* Costmap */
-        rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::ConstSharedPtr
-            costmap_sub_;
-        void onLatestCostmapReceived(nav_msgs::msg::OccupancyGrid::SharedPtr msg);
-        std::shared_ptr<nav_msgs::msg::OccupancyGrid> latest_occu_map;
-        std::mutex occu_map_mutex;
+        std::shared_ptr<nav2_msgs::msg::Costmap> p_GetLatestCostmap();
+        std::shared_ptr<rclcpp::Node>
+            costmap_node_;
+        rclcpp::Client<nav2_msgs::srv::GetCostmap>::SharedPtr costmap_client_;
+        void p_PrintCostMapInfo(const nav2_msgs::msg::Costmap::SharedPtr msg);
 
         /* Trajectory Generator */
-        std::shared_ptr<local_planning::TrajectoryGeneratorROS> trajectory_generator_node_;
+        std::shared_ptr<local_planning::TrajectoryGeneratorROS>
+            trajectory_generator_node_;
         std::unique_ptr<nav2_util::NodeThread> trajectory_generator_thread_;
 
         /* Trajectory Scorer */
