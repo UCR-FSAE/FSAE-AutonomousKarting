@@ -42,6 +42,6 @@ def generate_launch_description():
 
     # node
     ld.add_action(local_planner_manager_node)
-    # ld.add_action(lifecycle_manager)
+    ld.add_action(lifecycle_manager)
 
     return ld
