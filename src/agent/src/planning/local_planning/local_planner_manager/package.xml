@@ -25,7 +25,6 @@
   <depend>trajectory_generator </depend>
   <depend>trajectory_scorer </depend>
   <depend>trajectory_picker </depend>
-
   <depend>planning_interfaces </depend>
 
   <test_depend>ament_lint_auto</test_depend>

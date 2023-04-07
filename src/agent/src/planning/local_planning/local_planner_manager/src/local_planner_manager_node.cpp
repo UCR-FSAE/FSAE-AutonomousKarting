@@ -37,6 +37,9 @@ namespace local_planning
 
     costmap_node_ = rclcpp::Node::make_shared("get_costmap_node");
     costmap_client_ = costmap_node_->create_client<nav2_msgs::srv::GetCostmap>("/local_costmap/get_costmap");
+    this->client_ptr_ = rclcpp_action::create_client<TrajectoryGeneration>(
+        this,
+        "trajectory/trajectory_generation");
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
@@ -87,15 +90,20 @@ namespace local_planning
   void LocalPlannerManagerNode::onLatestWaypointReceived(geometry_msgs::msg::Pose::SharedPtr msg)
   {
     std::lock_guard<std::mutex> lock(waypoint_mutex);
-    this->latest_waypoint_ = msg;
-    // RCLCPP_INFO(this->get_logger(), "latest_waypoint_ received");
+    // TODO: change global waypoint to be PoseStamped
+    geometry_msgs::msg::PoseStamped ps;
+    ps.pose = *msg;
+    std_msgs::msg::Header header; 
+    header.frame_id = "map";
+    header.stamp = this->get_clock()->now();
+    ps.header = header; 
+    this->latest_waypoint_ = std::make_shared<geometry_msgs::msg::PoseStamped>(ps);
   }
 
   void LocalPlannerManagerNode::onLatestOdomReceived(nav_msgs::msg::Odometry::SharedPtr msg)
   {
     std::lock_guard<std::mutex> lock(odom_mutex_);
     this->latest_odom = msg;
-    // RCLCPP_INFO(this->get_logger(), "odom received");
   }
 
   void LocalPlannerManagerNode::execute()
@@ -103,17 +111,15 @@ namespace local_planning
     std::lock_guard<std::mutex> odom_lock(odom_mutex_);
     std::lock_guard<std::mutex> waypoint_lock(waypoint_mutex);
 
-    if (this->didReceiveAllMessages())
+    if (this->didReceiveAllMessages() && num_execution == 0) // only one request at a time
     {
       num_execution += 1;
       nav2_msgs::msg::Costmap::SharedPtr curr_costmap = this->p_GetLatestCostmap();
       if (curr_costmap != nullptr)
       {
-        this->p_PrintCostMapInfo(curr_costmap);
+        this->send_goal(curr_costmap, this->latest_odom, this->latest_waypoint_);
       }
     }
-    num_execution -= 1;
-
   }
 
   std::shared_ptr<nav2_msgs::msg::Costmap> LocalPlannerManagerNode::p_GetLatestCostmap()
@@ -126,22 +132,61 @@ namespace local_planning
     auto request = std::make_shared<nav2_msgs::srv::GetCostmap::Request>();
     auto result = costmap_client_->async_send_request(request);
     // Wait for the result.
-    RCLCPP_INFO(get_logger(), "sending request");
 
     if (rclcpp::spin_until_future_complete(costmap_node_, result) ==
         rclcpp::FutureReturnCode::SUCCESS)
     {
-      this->p_PrintCostMapInfo(std::make_shared<nav2_msgs::msg::Costmap>(result.get()->map));
+      // this->p_PrintCostMapInfo(std::make_shared<nav2_msgs::msg::Costmap>(result.get()->map));
       return std::make_shared<nav2_msgs::msg::Costmap>(result.get()->map);
-      // RCLCPP_INFO(get_logger(), "fetched");
     }
     else
     {
-      // RCLCPP_INFO(get_logger(), "failed");
       return nullptr;
     }
   }
 
+  /* trajectory generation*/
+  void LocalPlannerManagerNode::send_goal(
+      const nav2_msgs::msg::Costmap::SharedPtr costmap,
+      const nav_msgs::msg::Odometry::SharedPtr odom,
+      geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint)
+  {
+    using namespace std::placeholders;
+    RCLCPP_DEBUG(get_logger(), "sending goal");
+
+    planning_interfaces::action::TrajectoryGeneration_Goal goal_msg = TrajectoryGeneration::Goal();
+    goal_msg.costmap = *costmap;
+    goal_msg.next_waypoint = *next_waypoint;
+    goal_msg.odom = *odom;
+    auto send_goal_options = rclcpp_action::Client<TrajectoryGeneration>::SendGoalOptions();
+    send_goal_options.goal_response_callback =
+        std::bind(&LocalPlannerManagerNode::trajectory_generator_goal_response_callback, this, _1);
+    send_goal_options.feedback_callback =
+        std::bind(&LocalPlannerManagerNode::trajectory_generator_feedback_callback, this, _1, _2);
+    send_goal_options.result_callback =
+        std::bind(&LocalPlannerManagerNode::trajectory_generator_result_callback, this, _1);
+    this->client_ptr_->async_send_goal(goal_msg, send_goal_options);
+  }
+  void LocalPlannerManagerNode::trajectory_generator_goal_response_callback(std::shared_future<GoalHandleTrajectoryGeneration::SharedPtr> future)
+  {
+
+  }
+
+  void LocalPlannerManagerNode::trajectory_generator_feedback_callback(
+      GoalHandleTrajectoryGeneration::SharedPtr,
+      const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback)
+  {
+    RCLCPP_INFO(get_logger(), "Feedback callback");
+    // TODO: call trajectory scoring
+  }
+
+  void LocalPlannerManagerNode::trajectory_generator_result_callback(const GoalHandleTrajectoryGeneration::WrappedResult &result)
+  {
+    RCLCPP_INFO(get_logger(), "Result callback");
+    this->num_execution -= 1;
+  }
+
+  /* helper methods */
   bool LocalPlannerManagerNode::canExecute()
   {
     if (this->didReceiveAllMessages() && num_execution < 1)

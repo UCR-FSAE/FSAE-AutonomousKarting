@@ -1,3 +1,6 @@
+#ifndef LOCAL_PLANNER_MANAGER_NODE_HPP_
+#define LOCAL_PLANNER_MANAGER_NODE_HPP_
+
 #include "nav2_util/lifecycle_node.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "nav_msgs/msg/odometry.hpp"
@@ -8,15 +11,15 @@
 #include <trajectory_generator/trajectory_generator_ros.hpp>
 #include <trajectory_scorer/trajectory_scorer_ros.hpp>
 #include <trajectory_picker/trajectory_picker_ros.hpp>
-
-
-#ifndef LOCAL_PLANNER_MANAGER_NODE_HPP_
-#define LOCAL_PLANNER_MANAGER_NODE_HPP_
+#include "planning_interfaces/action/trajectory_generation.hpp"
 
 namespace local_planning
 {
     class LocalPlannerManagerNode : public nav2_util::LifecycleNode
     {
+        using TrajectoryGeneration = planning_interfaces::action::TrajectoryGeneration;
+        using GoalHandleTrajectoryGeneration = rclcpp_action::ClientGoalHandle<TrajectoryGeneration>;
+
     public:
         LocalPlannerManagerNode();
         ~LocalPlannerManagerNode();
@@ -43,7 +46,7 @@ namespace local_planning
         bool canExecute();
 
         /* Waypoint */
-        std::shared_ptr<geometry_msgs::msg::Pose> latest_waypoint_;
+        std::shared_ptr<geometry_msgs::msg::PoseStamped> latest_waypoint_;
         rclcpp::Subscription<geometry_msgs::msg::Pose>::ConstSharedPtr
             next_waypoint_sub_;
         std::mutex waypoint_mutex;
@@ -67,7 +70,17 @@ namespace local_planning
         std::shared_ptr<local_planning::TrajectoryGeneratorROS>
             trajectory_generator_node_;
         std::unique_ptr<nav2_util::NodeThread> trajectory_generator_thread_;
-
+        rclcpp_action::Client<TrajectoryGeneration>::SharedPtr client_ptr_;
+        void trajectory_generator_goal_response_callback(std::shared_future<GoalHandleTrajectoryGeneration::SharedPtr> future);
+        void trajectory_generator_feedback_callback(
+            GoalHandleTrajectoryGeneration::SharedPtr,
+            const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback);
+        void trajectory_generator_result_callback(const GoalHandleTrajectoryGeneration::WrappedResult &result);
+        void send_goal(
+            const nav2_msgs::msg::Costmap::SharedPtr costmap,
+            const nav_msgs::msg::Odometry::SharedPtr odom,
+            geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint);
+        
         /* Trajectory Scorer */
         std::shared_ptr<local_planning::TrajectoryScorerROS> trajectory_scorer_node_;
         std::unique_ptr<nav2_util::NodeThread> trajectory_scorer_thread_;

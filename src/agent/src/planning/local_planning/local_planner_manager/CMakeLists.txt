@@ -20,7 +20,6 @@ find_package(visualization_msgs REQUIRED)
 find_package(trajectory_generator REQUIRED)
 find_package(trajectory_scorer REQUIRED)
 find_package(trajectory_picker REQUIRED)
-
 find_package(planning_interfaces REQUIRED)
 
 add_executable(local_planner_manager_node src/local_planner_manager_node.cpp)
