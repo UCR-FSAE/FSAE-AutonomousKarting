@@ -2,6 +2,9 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
+from ament_index_python.packages import get_package_share_directory
+import launch_ros
+from pathlib import Path
 import launch
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
@@ -9,6 +12,12 @@ from launch.actions import DeclareLaunchArgument
 
 
 def generate_launch_description():
+    base_path = Path(get_package_share_directory("global_planner_manager"))
+    config_file = (
+        base_path / "config" / "configs.yaml"
+    )
+    assert config_file.exists(), f"[{config_file}] does not exist"
+
     ld = launch.LaunchDescription()
     output_file_path = DeclareLaunchArgument(
         "output_file_path",
@@ -26,13 +35,14 @@ def generate_launch_description():
         name="waypoint_recorder_node",
         executable="waypoint_recorder",
         package="global_planner_manager",
-        parameters=[
-            {
-                "output_file_path": LaunchConfiguration("output_file_path"),
-                "odom_topic": LaunchConfiguration("odom_topic"),
-                "record_interval": LaunchConfiguration("record_interval"),
-            }
-        ],
+        parameters=[config_file],
+        # parameters=[
+        #     {
+        #         "output_file_path": LaunchConfiguration("output_file_path"),
+        #         "odom_topic": LaunchConfiguration("odom_topic"),
+        #         "record_interval": LaunchConfiguration("record_interval"),
+        #     }
+        # ],
     )
     # args
     ld.add_action(output_file_path)
