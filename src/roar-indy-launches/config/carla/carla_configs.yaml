@@ -44,10 +44,6 @@
     - /simple_local_planner
     - /pid_control
     use_sim_time: true
-    # autostart: false
-    # node_names:
-    # - 
-    # use_sim_time: false
 
 /local_costmap/local_costmap:
   ros__parameters:
