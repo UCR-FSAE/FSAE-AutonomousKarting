@@ -1,6 +1,7 @@
 #include "trajectory_generator/trajectory_generator_ros.hpp"
 #include <nav2_util/node_utils.hpp>
 
+
 namespace local_planning
 {
 
@@ -17,15 +18,22 @@ namespace local_planning
           name_(name),
           parent_namespace_(parent_namespace)
     {
-
+        
     }
 
     TrajectoryGeneratorROS ::~TrajectoryGeneratorROS()
     {
     }
 
+    void TrajectoryGeneratorROS::registerTrajectoryGenerator(const std::shared_ptr<TrajectoryGeneratorInterface> generator)
+    {
+        // Add the generator to the vector of trajectory generators
+        this->trajectory_generators.push_back(generator);
+    }
+
     /* Lifecycle */
-    nav2_util::CallbackReturn TrajectoryGeneratorROS::on_configure(const rclcpp_lifecycle::State &state)
+    nav2_util::CallbackReturn
+    TrajectoryGeneratorROS::on_configure(const rclcpp_lifecycle::State &state)
     {
         RCLCPP_INFO(this->get_logger(), "on_configure");
         return nav2_util::CallbackReturn::SUCCESS;
@@ -65,7 +73,7 @@ namespace local_planning
     rclcpp_action::GoalResponse
     TrajectoryGeneratorROS::handle_goal(const rclcpp_action::GoalUUID &uuid, std::shared_ptr<const TrajectoryGeneration::Goal> goal)
     {
-        RCLCPP_INFO(get_logger(), "handle_goal");
+        // RCLCPP_INFO(get_logger(), "handle_goal");
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
 
@@ -77,18 +85,42 @@ namespace local_planning
 
     void TrajectoryGeneratorROS::handle_accepted(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle)
     {
-        RCLCPP_INFO(get_logger(), "handle_accepted");
+        // RCLCPP_INFO(get_logger(), "handle_accepted");
 
         std::thread{std::bind(&TrajectoryGeneratorROS::execute, this, std::placeholders::_1), goal_handle}.detach();
     }
 
     void TrajectoryGeneratorROS::execute(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle)
     {
-        RCLCPP_INFO(this->get_logger(), "Executing goal");
-        auto feedback = std::make_shared<TrajectoryGeneration::Feedback>();
-        goal_handle->publish_feedback(feedback);
+        // prep for result
+        std::shared_ptr<planning_interfaces::msg::Trajectories> all_trajectories = std::make_shared<planning_interfaces::msg::Trajectories>();
+
+        // extract information
+        std::shared_ptr<const planning_interfaces::action::TrajectoryGeneration_Goal>
+            goal = goal_handle->get_goal();
+        std::shared_ptr<nav2_msgs::msg::Costmap> costmap =
+            std::make_shared<nav2_msgs::msg::Costmap>(goal->costmap);
+
+        std::shared_ptr<nav_msgs::msg::Odometry> odom =
+            std::make_shared<nav_msgs::msg::Odometry>(goal->odom);
+
+        std::shared_ptr<geometry_msgs::msg::PoseStamped> next_waypoint =
+            std::make_shared<geometry_msgs::msg::PoseStamped>(goal->next_waypoint);
+
+        // pass into generators
+        for (const auto &generator: this->trajectory_generators) {
+            RCLCPP_INFO(get_logger(), "Constructing trajectory");
+            nav_msgs::msg::Path trajectory = generator->computeTrajectory(costmap, odom, next_waypoint);
+            auto feedback = std::make_shared<TrajectoryGeneration::Feedback>();
+            feedback->trajectory = trajectory;
+            goal_handle->publish_feedback(feedback);
+
+            all_trajectories->trajectories.push_back(trajectory);
+        }
+
 
         auto result = std::make_shared<TrajectoryGeneration::Result>();
+        result->trajectories = *all_trajectories;
         goal_handle->succeed(result);
     }
 

@@ -80,6 +80,7 @@ namespace local_planning
             const nav2_msgs::msg::Costmap::SharedPtr costmap,
             const nav_msgs::msg::Odometry::SharedPtr odom,
             geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint);
+        void register_generators();
         
         /* Trajectory Scorer */
         std::shared_ptr<local_planning::TrajectoryScorerROS> trajectory_scorer_node_;

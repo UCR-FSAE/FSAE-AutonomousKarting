@@ -1,4 +1,5 @@
 #include "local_planner_manager/local_planner_manager_node.hpp"
+#include "trajectory_generator/dummy_trajectory_generator.hpp"
 
 namespace local_planning
 {
@@ -25,6 +26,7 @@ namespace local_planning
 
     trajectory_generator_node_ = std::make_shared<local_planning::TrajectoryGeneratorROS>("generator", std::string{get_namespace()}, "trajectory");
     trajectory_generator_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_generator_node_);
+    this->register_generators();
     trajectory_generator_node_->configure();
 
     trajectory_scorer_node_ = std::make_shared<local_planning::TrajectoryScorerROS>("scorer", std::string{get_namespace()}, "trajectory");
@@ -40,6 +42,7 @@ namespace local_planning
     this->client_ptr_ = rclcpp_action::create_client<TrajectoryGeneration>(
         this,
         "trajectory/trajectory_generation");
+
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
@@ -146,6 +149,12 @@ namespace local_planning
   }
 
   /* trajectory generation*/
+  void LocalPlannerManagerNode::register_generators()
+  {
+    std::shared_ptr<local_planning::DummyTrajectoryGenerator> dummy_generator = std::make_shared<local_planning::DummyTrajectoryGenerator>();
+    this->trajectory_generator_node_->registerTrajectoryGenerator(dummy_generator);
+  }
+
   void LocalPlannerManagerNode::send_goal(
       const nav2_msgs::msg::Costmap::SharedPtr costmap,
       const nav_msgs::msg::Odometry::SharedPtr odom,
@@ -176,7 +185,8 @@ namespace local_planning
       GoalHandleTrajectoryGeneration::SharedPtr,
       const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback)
   {
-    RCLCPP_INFO(get_logger(), "Feedback callback");
+    RCLCPP_INFO(get_logger(), "Feedback contains trajectory of length [%d]", feedback->trajectory.poses.size());
+    
     // TODO: call trajectory scoring
   }
 

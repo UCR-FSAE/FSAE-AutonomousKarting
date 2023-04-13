@@ -3,6 +3,7 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include <rclcpp_action/rclcpp_action.hpp>
 #include "planning_interfaces/action/trajectory_generation.hpp"
+#include "trajectory_generator/trajectory_generator_interface.hpp"
 
 namespace local_planning
 {
@@ -19,6 +20,8 @@ namespace local_planning
                 const std::string &local_namespace);
 
             ~TrajectoryGeneratorROS();
+
+            void registerTrajectoryGenerator(const std::shared_ptr<TrajectoryGeneratorInterface> generator);
 
         protected:
             // implement the lifecycle interface
@@ -43,6 +46,8 @@ namespace local_planning
             handle_cancel(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle);
             void handle_accepted(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle);
             void execute(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle);
+
+            std::vector<std::shared_ptr<TrajectoryGeneratorInterface>> trajectory_generators;
     };
 } // local_planning
 #endif
