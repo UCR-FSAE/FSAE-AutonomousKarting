@@ -49,31 +49,31 @@ def generate_launch_description():
         name="global_planner_manager",
         executable="global_planner_manager",
         package="global_planner_manager",
-        parameters=[config_file],
-        # parameters=[
-        #     {
-        #         "waypoint_file_path": LaunchConfiguration(
-        #             "waypoint_file_path",
-        #             default="./src/roar-indy-launches/config/carla_waypoints.txt",
-        #         ),
-        #         "debug": LaunchConfiguration("debug", default=False),
-        #     }
-        # ],
+        # parameters=[config_file],
+        parameters=[
+            {
+                "waypoint_file_path": LaunchConfiguration(
+                    "waypoint_file_path",
+                    default="./src/roar-indy-launches/config/carla_waypoints.txt",
+                ),
+                "debug": LaunchConfiguration("debug", default=False),
+            }
+        ],
     )
     waypoint_follower_server_node = Node(
         name="waypoint_follower_server_node",
         executable="waypoint_follower",
         package="global_planner_manager",
-        parameters=[config_file],
-        # parameters=[
-        #     {
-        #         "lookahead_dist": LaunchConfiguration("lookahead_dist"),
-        #         "loop_rate": LaunchConfiguration("loop_rate"),
-        #         "speed_zone_and_lookahead_distance": LaunchConfiguration(
-        #             "speed_zone_and_lookahead_distance_path"
-        #         ),
-        #     }
-        # ],
+        # parameters=[config_file],
+        parameters=[
+            {
+                "lookahead_dist": LaunchConfiguration("lookahead_dist"),
+                "loop_rate": LaunchConfiguration("loop_rate"),
+                "speed_zone_and_lookahead_distance": LaunchConfiguration(
+                    "speed_zone_and_lookahead_distance_path"
+                ),
+            }
+        ],
         remappings=[
             (
                 "odom",

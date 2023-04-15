@@ -35,16 +35,16 @@ def generate_launch_description():
         name="pid_control",
         executable="pid_control_node",
         package="pid_control",
-        parameters=[
-            config_file
-        ],
         # parameters=[
-        #     {
-        #         "loop_rate": LaunchConfiguration("loop_rate"),
-        #         "debug": LaunchConfiguration("debug"),
-        #         "pid_config_file_path": LaunchConfiguration("pid_config_file_path"),
-        #     }
+        #     config_file
         # ],
+        parameters=[
+            {
+                "loop_rate": LaunchConfiguration("loop_rate"),
+                "debug": LaunchConfiguration("debug"),
+                "pid_config_file_path": LaunchConfiguration("pid_config_file_path"),
+            }
+        ],
     )
     # lifecycle_manager = Node(
     #     package="nav2_lifecycle_manager",

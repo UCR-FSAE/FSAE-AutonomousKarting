@@ -172,6 +172,18 @@ def generate_launch_description():
         parameters=[
             config_file
         ],
+        # parameters=[
+        #     {"use_sim_time": True},
+        #     {"autostart": True},
+        #     {
+        #         "node_names": [
+        #             "/costmap_node_manager",
+        #             "/global_planner_manager",
+        #             "/simple_local_planner",
+        #             "/pid_control",
+        #         ]
+        #     },
+        # ],
     )
 
     ld = launch.LaunchDescription()

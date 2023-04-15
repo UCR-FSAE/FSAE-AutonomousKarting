@@ -32,9 +32,16 @@ def generate_launch_description():
         name="simple_local_planner",
         executable="simple_local_planner_node",
         package="simple_local_planner",
+        # parameters=[
+        #     config_file
+        # ],
         parameters=[
-            config_file
+            {
+                "loop_rate": LaunchConfiguration("loop_rate"),
+                "target_spd": LaunchConfiguration("target_spd"),
+            }
         ],
+
     )
     # args
     ld.add_action(loop_rate)

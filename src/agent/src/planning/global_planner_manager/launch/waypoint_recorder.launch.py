@@ -35,14 +35,14 @@ def generate_launch_description():
         name="waypoint_recorder_node",
         executable="waypoint_recorder",
         package="global_planner_manager",
-        parameters=[config_file],
-        # parameters=[
-        #     {
-        #         "output_file_path": LaunchConfiguration("output_file_path"),
-        #         "odom_topic": LaunchConfiguration("odom_topic"),
-        #         "record_interval": LaunchConfiguration("record_interval"),
-        #     }
-        # ],
+        # parameters=[config_file],
+        parameters=[
+            {
+                "output_file_path": LaunchConfiguration("output_file_path"),
+                "odom_topic": LaunchConfiguration("odom_topic"),
+                "record_interval": LaunchConfiguration("record_interval"),
+            }
+        ],
     )
     # args
     ld.add_action(output_file_path)
