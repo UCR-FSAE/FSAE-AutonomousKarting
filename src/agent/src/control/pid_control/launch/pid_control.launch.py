@@ -14,6 +14,11 @@ def generate_launch_description():
     ld = launch.LaunchDescription()
     base_path = Path(get_package_share_directory("pid_control"))
 
+    config_file = (
+        base_path / "config" / "configs.yaml"
+    )
+    assert config_file.exists(), f"[{config_file}] does not exist"
+
     loop_rate = DeclareLaunchArgument(
         "loop_rate",
         default_value="30.0",
@@ -31,12 +36,16 @@ def generate_launch_description():
         executable="pid_control_node",
         package="pid_control",
         parameters=[
-            {
-                "loop_rate": LaunchConfiguration("loop_rate"),
-                "debug": LaunchConfiguration("debug"),
-                "pid_config_file_path": LaunchConfiguration("pid_config_file_path"),
-            }
+            config_file,
+            {"pid_config_file_path": LaunchConfiguration("pid_config_file_path")},
         ],
+        # parameters=[
+        #     {
+        #         "loop_rate": LaunchConfiguration("loop_rate"),
+        #         "debug": LaunchConfiguration("debug"),
+        #         "pid_config_file_path": LaunchConfiguration("pid_config_file_path"),
+        #     }
+        # ],
     )
     # lifecycle_manager = Node(
     #     package="nav2_lifecycle_manager",

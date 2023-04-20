@@ -1,0 +1,13 @@
+global_planner_manager:
+  ros__parameters:
+    debug: false
+
+waypoint_follower_server_node:
+  ros__parameters:
+    lookahead_dist: 5.0
+    loop_rate: 5.0
+
+waypoint_recorder_node:
+  ros__parameters:
+    odom_topic: "/carla/ego_vehicle/odometry"
+    record_interval: 1.0

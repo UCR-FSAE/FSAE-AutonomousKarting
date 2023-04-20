@@ -17,6 +17,12 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     base_path = Path(get_package_share_directory("roar-indy-launches"))
+    config_file = (
+        base_path / "config" / "carla" / "carla_configs.yaml"
+    )
+    assert config_file.exists(), f"[{config_file}] does not exist"
+
+    base_path = Path(get_package_share_directory("roar-indy-launches"))
     carla_objects_definition_file = (
         base_path / "config" / "carla" / "carla_objects_definition_file.json"
     )
@@ -62,19 +68,7 @@ def generate_launch_description():
         executable="pointcloud_to_laserscan_node",
         package="pointcloud_to_laserscan",
         parameters=[
-            {
-                "transform_tolerance": 0.01,
-                "min_height": 0.0,
-                "max_height": 100.0,
-                "angle_min": -1.5708,  # -M_PI/2
-                "angle_max": 1.5708,  # M_PI/2
-                "angle_increment": 0.0087,  # M_PI/360.0
-                "scan_time": 0.3333,
-                "range_min": 0.45,
-                "range_max": 100.0,
-                "use_inf": True,
-                "inf_epsilon": 1.0,
-            }
+            config_file
         ],
         remappings=[
             ("cloud_in", "/carla/ego_vehicle/center_lidar"),
@@ -176,17 +170,20 @@ def generate_launch_description():
         name="lifecycle_manager_navigation",
         output="screen",
         parameters=[
-            {"use_sim_time": True},
-            {"autostart": True},
-            {
-                "node_names": [
-                    "/costmap_node_manager",
-                    "/global_planner_manager",
-                    "/simple_local_planner",
-                    "/pid_control",
-                ]
-            },
+            config_file
         ],
+        # parameters=[
+        #     {"use_sim_time": True},
+        #     {"autostart": True},
+        #     {
+        #         "node_names": [
+        #             "/costmap_node_manager",
+        #             "/global_planner_manager",
+        #             "/simple_local_planner",
+        #             "/pid_control",
+        #         ]
+        #     },
+        # ],
     )
 
     ld = launch.LaunchDescription()

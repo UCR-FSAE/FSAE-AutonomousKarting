@@ -1,0 +1,6 @@
+simple_local_planner:
+  ros__parameters:
+    loop_rate: 10.0
+    target_spd: 1.0
+
+
