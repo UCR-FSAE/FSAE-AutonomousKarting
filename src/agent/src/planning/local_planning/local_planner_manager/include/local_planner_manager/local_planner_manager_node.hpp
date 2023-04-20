@@ -4,6 +4,7 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include "geometry_msgs/msg/pose.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include <nav2_msgs/msg/costmap_meta_data.hpp>
 #include <nav2_msgs/srv/get_costmap.hpp>
 #include <nav2_msgs/srv/clear_entire_costmap.hpp>
@@ -12,7 +13,7 @@
 #include <trajectory_scorer/trajectory_scorer_ros.hpp>
 #include <trajectory_picker/trajectory_picker_ros.hpp>
 #include "planning_interfaces/action/trajectory_generation.hpp"
-
+#include "planning_interfaces/srv/trajectory_scoring.hpp"
 namespace local_planning
 {
     class LocalPlannerManagerNode : public nav2_util::LifecycleNode
@@ -65,6 +66,7 @@ namespace local_planning
             costmap_node_;
         rclcpp::Client<nav2_msgs::srv::GetCostmap>::SharedPtr costmap_client_;
         void p_PrintCostMapInfo(const nav2_msgs::msg::Costmap::SharedPtr msg);
+        std::shared_ptr<nav2_msgs::msg::Costmap> latest_costmap_;
 
         /* Trajectory Generator */
         std::shared_ptr<local_planning::TrajectoryGeneratorROS>
@@ -76,15 +78,20 @@ namespace local_planning
             GoalHandleTrajectoryGeneration::SharedPtr,
             const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback);
         void trajectory_generator_result_callback(const GoalHandleTrajectoryGeneration::WrappedResult &result);
-        void send_goal(
+        void send_trajectory_generator_action(
             const nav2_msgs::msg::Costmap::SharedPtr costmap,
             const nav_msgs::msg::Odometry::SharedPtr odom,
-            geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint);
+            const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint);
         void register_generators();
+        std::shared_ptr<planning_interfaces::action::TrajectoryGeneration_Goal> generator_request;
         
         /* Trajectory Scorer */
         std::shared_ptr<local_planning::TrajectoryScorerROS> trajectory_scorer_node_;
         std::unique_ptr<nav2_util::NodeThread> trajectory_scorer_thread_;
+        void send_trajectory_scorer_action(            
+            const std::shared_ptr<planning_interfaces::action::TrajectoryGeneration_Goal> generator_request,
+            const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback);
+
 
         /* Trajectory Picker */
         std::shared_ptr<local_planning::TrajectoryPickerROS> trajectory_picker_node_;

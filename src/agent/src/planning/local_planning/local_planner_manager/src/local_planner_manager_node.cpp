@@ -117,10 +117,10 @@ namespace local_planning
     if (this->didReceiveAllMessages() && num_execution == 0) // only one request at a time
     {
       num_execution += 1;
-      nav2_msgs::msg::Costmap::SharedPtr curr_costmap = this->p_GetLatestCostmap();
-      if (curr_costmap != nullptr)
+      latest_costmap_ = this->p_GetLatestCostmap();
+      if (latest_costmap_ != nullptr)
       {
-        this->send_goal(curr_costmap, this->latest_odom, this->latest_waypoint_);
+        this->send_trajectory_generator_action(latest_costmap_, this->latest_odom, this->latest_waypoint_);
       }
     }
   }
@@ -155,10 +155,10 @@ namespace local_planning
     this->trajectory_generator_node_->registerTrajectoryGenerator(dummy_generator);
   }
 
-  void LocalPlannerManagerNode::send_goal(
+  void LocalPlannerManagerNode::send_trajectory_generator_action(
       const nav2_msgs::msg::Costmap::SharedPtr costmap,
       const nav_msgs::msg::Odometry::SharedPtr odom,
-      geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint)
+      const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint)
   {
     using namespace std::placeholders;
     RCLCPP_DEBUG(get_logger(), "sending goal");
@@ -167,6 +167,9 @@ namespace local_planning
     goal_msg.costmap = *costmap;
     goal_msg.next_waypoint = *next_waypoint;
     goal_msg.odom = *odom;
+
+    generator_request = std::make_shared<planning_interfaces::action::TrajectoryGeneration_Goal>(goal_msg);
+    
     auto send_goal_options = rclcpp_action::Client<TrajectoryGeneration>::SendGoalOptions();
     send_goal_options.goal_response_callback =
         std::bind(&LocalPlannerManagerNode::trajectory_generator_goal_response_callback, this, _1);
@@ -182,18 +185,33 @@ namespace local_planning
   }
 
   void LocalPlannerManagerNode::trajectory_generator_feedback_callback(
-      GoalHandleTrajectoryGeneration::SharedPtr,
+      GoalHandleTrajectoryGeneration::SharedPtr goal_handle,
       const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback)
   {
     RCLCPP_INFO(get_logger(), "Feedback contains trajectory of length [%d]", feedback->trajectory.poses.size());
-    
-    // TODO: call trajectory scoring
+    if (this->generator_request != nullptr)
+    {
+      this->send_trajectory_scorer_action(generator_request, feedback);
+    }
   }
 
   void LocalPlannerManagerNode::trajectory_generator_result_callback(const GoalHandleTrajectoryGeneration::WrappedResult &result)
   {
     RCLCPP_INFO(get_logger(), "Result callback");
     this->num_execution -= 1;
+  }
+
+  void LocalPlannerManagerNode::send_trajectory_scorer_action(
+            const std::shared_ptr<planning_interfaces::action::TrajectoryGeneration_Goal> generator_request,
+            const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback)
+  {
+    auto request = std::make_shared<planning_interfaces::srv::TrajectoryScoring::Request>();
+    request->costmap = generator_request->costmap;
+    request->odom = generator_request->odom;
+    request->next_waypoint = generator_request->next_waypoint;
+    request->trajectory = feedback->trajectory;
+
+    
   }
 
   /* helper methods */
