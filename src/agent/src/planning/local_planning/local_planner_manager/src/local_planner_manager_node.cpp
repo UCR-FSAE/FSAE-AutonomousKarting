@@ -33,15 +33,18 @@ namespace local_planning
     trajectory_scorer_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_scorer_node_);
     trajectory_scorer_node_->configure();
 
+
+
     trajectory_picker_node_ = std::make_shared<local_planning::TrajectoryPickerROS>("picker", std::string{get_namespace()}, "trajectory");
     trajectory_picker_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_picker_node_);
     trajectory_picker_node_->configure();
 
     costmap_node_ = rclcpp::Node::make_shared("get_costmap_node");
     costmap_client_ = costmap_node_->create_client<nav2_msgs::srv::GetCostmap>("/local_costmap/get_costmap");
-    this->client_ptr_ = rclcpp_action::create_client<TrajectoryGeneration>(
-        this,
-        "trajectory/trajectory_generation");
+
+
+    
+
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -56,6 +59,14 @@ namespace local_planning
     trajectory_generator_node_->activate();
     trajectory_scorer_node_->activate();
     trajectory_picker_node_->activate();
+
+    this->trajectory_generator_client = rclcpp_action::create_client<TrajectoryGeneration>(
+    this,
+    "trajectory/trajectory_generation");
+
+    this->trajectory_scoring_client = rclcpp_action::create_client<planning_interfaces::srv::TrajectoryScoring>(
+    this,
+    "trajectory/trajectory_scoring");
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
@@ -177,7 +188,7 @@ namespace local_planning
         std::bind(&LocalPlannerManagerNode::trajectory_generator_feedback_callback, this, _1, _2);
     send_goal_options.result_callback =
         std::bind(&LocalPlannerManagerNode::trajectory_generator_result_callback, this, _1);
-    this->client_ptr_->async_send_goal(goal_msg, send_goal_options);
+    this->trajectory_generator_client->async_send_goal(goal_msg, send_goal_options);
   }
   void LocalPlannerManagerNode::trajectory_generator_goal_response_callback(std::shared_future<GoalHandleTrajectoryGeneration::SharedPtr> future)
   {
@@ -210,7 +221,7 @@ namespace local_planning
     request->odom = generator_request->odom;
     request->next_waypoint = generator_request->next_waypoint;
     request->trajectory = feedback->trajectory;
-
+    // trajectory_scoring_client->async_send_goal(request); // TODO: figure out how to async catch this or just do it serially
     
   }
 

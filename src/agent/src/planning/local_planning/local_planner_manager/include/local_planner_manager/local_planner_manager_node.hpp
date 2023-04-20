@@ -72,7 +72,7 @@ namespace local_planning
         std::shared_ptr<local_planning::TrajectoryGeneratorROS>
             trajectory_generator_node_;
         std::unique_ptr<nav2_util::NodeThread> trajectory_generator_thread_;
-        rclcpp_action::Client<TrajectoryGeneration>::SharedPtr client_ptr_;
+        rclcpp_action::Client<TrajectoryGeneration>::SharedPtr trajectory_generator_client;
         void trajectory_generator_goal_response_callback(std::shared_future<GoalHandleTrajectoryGeneration::SharedPtr> future);
         void trajectory_generator_feedback_callback(
             GoalHandleTrajectoryGeneration::SharedPtr,
@@ -91,6 +91,7 @@ namespace local_planning
         void send_trajectory_scorer_action(            
             const std::shared_ptr<planning_interfaces::action::TrajectoryGeneration_Goal> generator_request,
             const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback);
+        rclcpp_action::Client<planning_interfaces::srv::TrajectoryScoring>::SharedPtr trajectory_scoring_client;
 
 
         /* Trajectory Picker */
