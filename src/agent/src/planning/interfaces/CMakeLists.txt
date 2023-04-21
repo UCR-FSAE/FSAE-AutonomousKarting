@@ -14,6 +14,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/TrajectoryScore.msg"
   "msg/Trajectory.msg"
   "srv/TrajectoryScoring.srv"
+  "srv/ResetTrajectoryPicker.srv"
   "action/TrajectoryGeneration.action"
   DEPENDENCIES nav_msgs nav2_msgs geometry_msgs builtin_interfaces
 )

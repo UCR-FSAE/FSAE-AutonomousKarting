@@ -1,5 +1,6 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include "planning_interfaces/msg/trajectory.hpp"
+#include "planning_interfaces/srv/reset_trajectory_picker.hpp"
 
 #ifndef TRAJECTORY_PICKER_NODE_HPP_
 #define TRAJECTORY_PICKER_NODE_HPP_
@@ -29,6 +30,18 @@ namespace local_planning
 
         std::string name_;
         std::string parent_namespace_;
+
+        std::vector<planning_interfaces::msg::Trajectory> trajectories;
+
+        void on_new_trajectory_received(const planning_interfaces::msg::Trajectory::SharedPtr msg);
+        rclcpp::Subscription<planning_interfaces::msg::Trajectory>::SharedPtr new_trajectory_sub_;
+
+        void on_publish_trajectory(const std::shared_ptr<planning_interfaces::msg::Trajectory> traj); 
+        std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<planning_interfaces::msg::Trajectory>> trajectory_publisher_;
+
+        void reset_trajectory_picker(const std::shared_ptr<planning_interfaces::srv::ResetTrajectoryPicker::Request> req,
+                                     std::shared_ptr<planning_interfaces::srv::ResetTrajectoryPicker::Response> resp);
+        rclcpp::Service<planning_interfaces::srv::ResetTrajectoryPicker>::SharedPtr reset_trajectory_picker_service;
     };
 } // local_planning
 #endif

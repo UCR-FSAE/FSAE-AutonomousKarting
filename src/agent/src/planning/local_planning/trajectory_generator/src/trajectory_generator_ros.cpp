@@ -111,14 +111,23 @@ namespace local_planning
         for (const auto &generator: this->trajectory_generators) {
             RCLCPP_INFO(get_logger(), "Constructing trajectory");
             planning_interfaces::msg::Trajectory trajectory; 
+
+            std_msgs::msg::Header header;
+            header.frame_id = "ego_vehicle"; // TODO: change this
+            header.stamp = this->get_clock()->now();
+            trajectory.header = header;
+
+            nav_msgs::msg::Path path = generator->computeTrajectory(costmap, odom, next_waypoint);
+            trajectory.trajectory = path;
+
+            // TODO: implement scoring
             planning_interfaces::msg::TrajectoryScore score;
             score.name = "default";
             score.raw_score = 1.0;
             score.scale = 1.0;
+            trajectory.score = score; 
 
-            nav_msgs::msg::Path path = generator->computeTrajectory(costmap, odom, next_waypoint);
-            trajectory.trajectory = path;
-            trajectory.score = score; // TODO: implement scoring
+
 
 
             auto feedback = std::make_shared<TrajectoryGeneration::Feedback>();
