@@ -3,6 +3,7 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include <rclcpp_action/rclcpp_action.hpp>
 #include "planning_interfaces/action/trajectory_generation.hpp"
+#include "planning_interfaces/msg/trajectory.hpp"
 #include "trajectory_generator/trajectory_generator_interface.hpp"
 
 namespace local_planning

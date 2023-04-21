@@ -12,6 +12,7 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Trajectories.msg"
   "msg/TrajectoryScore.msg"
+  "msg/Trajectory.msg"
   "srv/TrajectoryScoring.srv"
   "action/TrajectoryGeneration.action"
   DEPENDENCIES nav_msgs nav2_msgs geometry_msgs builtin_interfaces

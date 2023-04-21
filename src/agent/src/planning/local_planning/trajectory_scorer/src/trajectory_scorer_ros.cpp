@@ -31,10 +31,6 @@ namespace local_planning
     nav2_util::CallbackReturn TrajectoryScorerROS::on_activate(const rclcpp_lifecycle::State &state)
     {
         RCLCPP_INFO(get_logger(), "on_activate");
-        service = this->create_service<planning_interfaces::srv::TrajectoryScoring>("trajectory_scoring", 
-                                                                                    std::bind(&TrajectoryScorerROS::score_trajectory, 
-                                                                                              this, std::placeholders::_1, 
-                                                                                              std::placeholders::_2));
         return nav2_util::CallbackReturn::SUCCESS;
     }
 
@@ -56,10 +52,13 @@ namespace local_planning
         return nav2_util::CallbackReturn::SUCCESS;
     }
 
-    void TrajectoryScorerROS::score_trajectory(
-            const std::shared_ptr<planning_interfaces::srv::TrajectoryScoring::Request> request,
-            const std::shared_ptr<planning_interfaces::srv::TrajectoryScoring::Response> response)
-    {
-        RCLCPP_INFO(get_logger(), "Scoring trajectory");
-    }
+    // std::shared_ptr<planning_interfaces::srv::TrajectoryScoring::Response> TrajectoryScorerROS::score_trajectory(const std::shared_ptr<planning_interfaces::srv::TrajectoryScoring::Request> scoring_request)
+    // {
+    //     planning_interfaces::msg::TrajectoryScore score;
+    //     score.name = "default_scorer";
+    //     score.raw_score = 1.0;
+    //     score.scale = 1.0; 
+    //     return std::make_shared<planning_interfaces::srv::TrajectoryScoring::Response>(score);
+    // }
+
 } // local_planning

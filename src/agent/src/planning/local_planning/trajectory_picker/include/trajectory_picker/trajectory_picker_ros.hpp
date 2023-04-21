@@ -1,4 +1,6 @@
 #include "nav2_util/lifecycle_node.hpp"
+#include "planning_interfaces/msg/trajectory.hpp"
+
 #ifndef TRAJECTORY_PICKER_NODE_HPP_
 #define TRAJECTORY_PICKER_NODE_HPP_
 namespace local_planning

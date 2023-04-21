@@ -1,5 +1,8 @@
 #include "nav2_util/lifecycle_node.hpp"
 #include "planning_interfaces/srv/trajectory_scoring.hpp"
+#include "planning_interfaces/msg/trajectory_score.hpp"
+
+
 #ifndef TRAJECTORY_SCORER_NODE_HPP_
 #define TRAJECTORY_SCORER_NODE_HPP_
 namespace local_planning
@@ -13,6 +16,9 @@ namespace local_planning
             const std::string &parent_namespace,
             const std::string &local_namespace);
         ~TrajectoryScorerROS();
+
+        // std::shared_ptr<planning_interfaces::srv::TrajectoryScoring::Response> score_trajectory(const std::shared_ptr<planning_interfaces::srv::TrajectoryScoring::Request> scoring_request);
+
 
     protected:
         // implement the lifecycle interface
@@ -30,10 +36,6 @@ namespace local_planning
         std::string parent_namespace_;
 
         rclcpp::Service<planning_interfaces::srv::TrajectoryScoring>::SharedPtr service;
-
-        void score_trajectory(
-            const std::shared_ptr<planning_interfaces::srv::TrajectoryScoring::Request> request,
-            const std::shared_ptr<planning_interfaces::srv::TrajectoryScoring::Response> response);
     };
 } // local_planning
 #endif

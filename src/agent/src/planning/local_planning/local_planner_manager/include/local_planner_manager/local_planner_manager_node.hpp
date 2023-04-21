@@ -10,7 +10,6 @@
 #include <nav2_msgs/srv/clear_entire_costmap.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <trajectory_generator/trajectory_generator_ros.hpp>
-#include <trajectory_scorer/trajectory_scorer_ros.hpp>
 #include <trajectory_picker/trajectory_picker_ros.hpp>
 #include "planning_interfaces/action/trajectory_generation.hpp"
 #include "planning_interfaces/srv/trajectory_scoring.hpp"
@@ -83,16 +82,6 @@ namespace local_planning
             const nav_msgs::msg::Odometry::SharedPtr odom,
             const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint);
         void register_generators();
-        std::shared_ptr<planning_interfaces::action::TrajectoryGeneration_Goal> generator_request;
-        
-        /* Trajectory Scorer */
-        std::shared_ptr<local_planning::TrajectoryScorerROS> trajectory_scorer_node_;
-        std::unique_ptr<nav2_util::NodeThread> trajectory_scorer_thread_;
-        void send_trajectory_scorer_action(            
-            const std::shared_ptr<planning_interfaces::action::TrajectoryGeneration_Goal> generator_request,
-            const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback);
-        rclcpp_action::Client<planning_interfaces::srv::TrajectoryScoring>::SharedPtr trajectory_scoring_client;
-
 
         /* Trajectory Picker */
         std::shared_ptr<local_planning::TrajectoryPickerROS> trajectory_picker_node_;

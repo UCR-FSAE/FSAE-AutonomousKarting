@@ -29,22 +29,12 @@ namespace local_planning
     this->register_generators();
     trajectory_generator_node_->configure();
 
-    trajectory_scorer_node_ = std::make_shared<local_planning::TrajectoryScorerROS>("scorer", std::string{get_namespace()}, "trajectory");
-    trajectory_scorer_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_scorer_node_);
-    trajectory_scorer_node_->configure();
-
-
-
     trajectory_picker_node_ = std::make_shared<local_planning::TrajectoryPickerROS>("picker", std::string{get_namespace()}, "trajectory");
     trajectory_picker_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_picker_node_);
     trajectory_picker_node_->configure();
 
     costmap_node_ = rclcpp::Node::make_shared("get_costmap_node");
     costmap_client_ = costmap_node_->create_client<nav2_msgs::srv::GetCostmap>("/local_costmap/get_costmap");
-
-
-    
-
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -57,16 +47,12 @@ namespace local_planning
     execute_timer = create_wall_timer(std::chrono::milliseconds(int(loop_rate * 1000)),
                                       std::bind(&LocalPlannerManagerNode::execute, this));
     trajectory_generator_node_->activate();
-    trajectory_scorer_node_->activate();
     trajectory_picker_node_->activate();
 
     this->trajectory_generator_client = rclcpp_action::create_client<TrajectoryGeneration>(
     this,
     "trajectory/trajectory_generation");
 
-    this->trajectory_scoring_client = rclcpp_action::create_client<planning_interfaces::srv::TrajectoryScoring>(
-    this,
-    "trajectory/trajectory_scoring");
     return nav2_util::CallbackReturn::SUCCESS;
   }
 
@@ -75,7 +61,6 @@ namespace local_planning
     RCLCPP_INFO(this->get_logger(), "on_deactivate");
     execute_timer->cancel();
     trajectory_generator_node_->deactivate();
-    trajectory_scorer_node_->deactivate();
     trajectory_picker_node_->deactivate();
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -86,7 +71,6 @@ namespace local_planning
     this->next_waypoint_sub_ = nullptr;
     this->odom_sub_ = nullptr;
     trajectory_generator_node_->cleanup();
-    trajectory_scorer_node_->cleanup();
     trajectory_picker_node_->cleanup();
 
     return nav2_util::CallbackReturn::SUCCESS;
@@ -96,7 +80,6 @@ namespace local_planning
   {
     RCLCPP_INFO(this->get_logger(), "on_shutdown");
     trajectory_generator_node_->shutdown();
-    trajectory_scorer_node_->shutdown();
     trajectory_picker_node_->shutdown();
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -147,9 +130,9 @@ namespace local_planning
     auto result = costmap_client_->async_send_request(request);
     // Wait for the result.
 
-    if (rclcpp::spin_until_future_complete(costmap_node_, result) ==
-        rclcpp::FutureReturnCode::SUCCESS)
+    if (rclcpp::spin_until_future_complete(costmap_node_, result) == rclcpp::FutureReturnCode::SUCCESS)
     {
+      // TODO: error on timeout
       // this->p_PrintCostMapInfo(std::make_shared<nav2_msgs::msg::Costmap>(result.get()->map));
       return std::make_shared<nav2_msgs::msg::Costmap>(result.get()->map);
     }
@@ -178,8 +161,6 @@ namespace local_planning
     goal_msg.costmap = *costmap;
     goal_msg.next_waypoint = *next_waypoint;
     goal_msg.odom = *odom;
-
-    generator_request = std::make_shared<planning_interfaces::action::TrajectoryGeneration_Goal>(goal_msg);
     
     auto send_goal_options = rclcpp_action::Client<TrajectoryGeneration>::SendGoalOptions();
     send_goal_options.goal_response_callback =
@@ -199,30 +180,14 @@ namespace local_planning
       GoalHandleTrajectoryGeneration::SharedPtr goal_handle,
       const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback)
   {
-    RCLCPP_INFO(get_logger(), "Feedback contains trajectory of length [%d]", feedback->trajectory.poses.size());
-    if (this->generator_request != nullptr)
-    {
-      this->send_trajectory_scorer_action(generator_request, feedback);
-    }
+    RCLCPP_INFO(get_logger(), "Feedback contains trajectory of length [%d] and raw_score: [%.3f]", feedback->trajectory.trajectory.poses.size(), feedback->trajectory.score.raw_score);
+
   }
 
   void LocalPlannerManagerNode::trajectory_generator_result_callback(const GoalHandleTrajectoryGeneration::WrappedResult &result)
   {
     RCLCPP_INFO(get_logger(), "Result callback");
     this->num_execution -= 1;
-  }
-
-  void LocalPlannerManagerNode::send_trajectory_scorer_action(
-            const std::shared_ptr<planning_interfaces::action::TrajectoryGeneration_Goal> generator_request,
-            const std::shared_ptr<const TrajectoryGeneration::Feedback> feedback)
-  {
-    auto request = std::make_shared<planning_interfaces::srv::TrajectoryScoring::Request>();
-    request->costmap = generator_request->costmap;
-    request->odom = generator_request->odom;
-    request->next_waypoint = generator_request->next_waypoint;
-    request->trajectory = feedback->trajectory;
-    // trajectory_scoring_client->async_send_goal(request); // TODO: figure out how to async catch this or just do it serially
-    
   }
 
   /* helper methods */

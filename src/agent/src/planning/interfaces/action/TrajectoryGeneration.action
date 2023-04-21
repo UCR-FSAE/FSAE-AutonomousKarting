@@ -11,4 +11,4 @@ geometry_msgs/PoseStamped next_waypoint
 Trajectories trajectories
 ---
 # Feedback
-nav_msgs/Path trajectory
+Trajectory trajectory
