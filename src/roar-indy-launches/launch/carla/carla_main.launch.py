@@ -17,9 +17,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     base_path = Path(get_package_share_directory("roar-indy-launches"))
-    config_file = (
-        base_path / "config" / "carla" / "carla_configs.yaml"
-    )
+    config_file = base_path / "config" / "carla" / "carla_configs.yaml"
     assert config_file.exists(), f"[{config_file}] does not exist"
 
     base_path = Path(get_package_share_directory("roar-indy-launches"))
@@ -67,9 +65,7 @@ def generate_launch_description():
         name="pointcloud_to_laserscan",
         executable="pointcloud_to_laserscan_node",
         package="pointcloud_to_laserscan",
-        parameters=[
-            config_file
-        ],
+        parameters=[config_file],
         remappings=[
             ("cloud_in", "/carla/ego_vehicle/center_lidar"),
             ("scan", "/carla/ego_vehicle/laserscan"),
@@ -163,15 +159,23 @@ def generate_launch_description():
             "debug": LaunchConfiguration("debug"),
         }.items(),
     )
+    local_planner_manager_launch_file_path: Path = (
+        Path(get_package_share_directory("local_planner_manager"))
+        / "launch"
+        / "local_planner_manager.launch.py"
+    )
+    local_planner_manager = launch.actions.IncludeLaunchDescription(
+        launch.launch_description_sources.PythonLaunchDescriptionSource(
+            local_planner_manager_launch_file_path.as_posix()
+        )
+    )
 
     lifecycle_manager = Node(
         package="nav2_lifecycle_manager",
         executable="lifecycle_manager",
-        name="lifecycle_manager_navigation",
+        name="lifecycle_manager_main",
         output="screen",
-        parameters=[
-            config_file
-        ],
+        parameters=[config_file],
         # parameters=[
         #     {"use_sim_time": True},
         #     {"autostart": True},
@@ -199,9 +203,10 @@ def generate_launch_description():
     ld.add_action(carla_client_node)
     ld.add_action(costmap_manager)
     ld.add_action(global_planner_launcher)
-    ld.add_action(simple_local_planner_launcher)
-    ld.add_action(roar_carla_control)
-    ld.add_action(pid_control)
+    ld.add_action(local_planner_manager)
+    # ld.add_action(simple_local_planner_launcher)
+    # ld.add_action(roar_carla_control)
+    # ld.add_action(pid_control)
 
     ld.add_action(lifecycle_manager)
     return ld
