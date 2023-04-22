@@ -82,10 +82,19 @@ namespace local_planning
             const nav_msgs::msg::Odometry::SharedPtr odom,
             const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint);
         void register_generators();
+        std::shared_future<GoalHandleTrajectoryGeneration::SharedPtr> curr_generator_goal_future;
+
+
+
 
         /* Trajectory Picker */
         std::shared_ptr<local_planning::TrajectoryPickerROS> trajectory_picker_node_;
         std::unique_ptr<nav2_util::NodeThread> trajectory_picker_thread_;
+        void on_best_trajectory_publication_received(const planning_interfaces::msg::Trajectory::SharedPtr msg);
+        rclcpp::Subscription<planning_interfaces::msg::Trajectory>::SharedPtr best_trajectory_subscriber_;
+        std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<planning_interfaces::msg::Trajectory>> possible_trajectory_publisher_;
+
+
     };
 } // local_planning
 #endif

@@ -49,6 +49,8 @@ namespace local_planning
             void execute(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle);
 
             std::vector<std::shared_ptr<TrajectoryGeneratorInterface>> trajectory_generators;
+            std::mutex mutex_;
+            std::shared_ptr<GoalHandleTrajectoryGeneration> active_goal_; // use this to ensure that only one goal is executing at a time
     };
 } // local_planning
 #endif

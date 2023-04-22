@@ -20,6 +20,7 @@ def generate_launch_description():
         parameters=[
             {
                 "manager_rate": LaunchConfiguration("manager_rate", default="0.5"),
+                "debug": False,
             }
         ],
     )

@@ -18,7 +18,12 @@ namespace local_planning
           name_(name),
           parent_namespace_(parent_namespace)
     {
+        this->declare_parameter("debug", false);
         
+        if (this->get_parameter("debug").as_bool())
+        {
+            auto ret = rcutils_logging_set_logger_level(get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
+        }
     }
 
     TrajectoryGeneratorROS ::~TrajectoryGeneratorROS()
@@ -35,13 +40,13 @@ namespace local_planning
     nav2_util::CallbackReturn
     TrajectoryGeneratorROS::on_configure(const rclcpp_lifecycle::State &state)
     {
-        RCLCPP_INFO(this->get_logger(), "on_configure");
+        RCLCPP_DEBUG(this->get_logger(), "on_configure");
         return nav2_util::CallbackReturn::SUCCESS;
     }
 
     nav2_util::CallbackReturn TrajectoryGeneratorROS::on_activate(const rclcpp_lifecycle::State &state)
     {
-        RCLCPP_INFO(this->get_logger(), "on_activate");
+        RCLCPP_DEBUG(this->get_logger(), "on_activate");
         this->action_server_ = rclcpp_action::create_server<TrajectoryGeneration>(
             this,
             "trajectory_generation",
@@ -53,19 +58,19 @@ namespace local_planning
 
     nav2_util::CallbackReturn TrajectoryGeneratorROS::on_deactivate(const rclcpp_lifecycle::State &state)
     {
-        RCLCPP_INFO(this->get_logger(), "on_deactivate");
+        RCLCPP_DEBUG(this->get_logger(), "on_deactivate");
         return nav2_util::CallbackReturn::SUCCESS;
     }
 
     nav2_util::CallbackReturn TrajectoryGeneratorROS::on_cleanup(const rclcpp_lifecycle::State &state)
     {
-        RCLCPP_INFO(this->get_logger(), "on_cleanup");
+        RCLCPP_DEBUG(this->get_logger(), "on_cleanup");
         return nav2_util::CallbackReturn::SUCCESS;
     }
 
     nav2_util::CallbackReturn TrajectoryGeneratorROS::on_shutdown(const rclcpp_lifecycle::State &state)
     {
-        RCLCPP_INFO(this->get_logger(), "on_shutdown");
+        RCLCPP_DEBUG(this->get_logger(), "on_shutdown");
         return nav2_util::CallbackReturn::SUCCESS;
     }
 
@@ -80,13 +85,23 @@ namespace local_planning
     rclcpp_action::CancelResponse
     TrajectoryGeneratorROS::handle_cancel(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle)
     {
+        RCLCPP_DEBUG(get_logger(), "handle_cancel");
+        std::lock_guard<std::mutex> lock(mutex_);
         return rclcpp_action::CancelResponse::ACCEPT;
     }
 
     void TrajectoryGeneratorROS::handle_accepted(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle)
     {
-        // RCLCPP_INFO(get_logger(), "handle_accepted");
-
+        RCLCPP_DEBUG(get_logger(), "handle_accepted");
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (active_goal_)
+        {
+            RCLCPP_DEBUG(this->get_logger(), "Another goal is already active");
+            TrajectoryGeneration::Result::SharedPtr result = std::make_shared<TrajectoryGeneration::Result>();
+            goal_handle->abort(result);
+            return;
+        }
+        active_goal_ = goal_handle;
         std::thread{std::bind(&TrajectoryGeneratorROS::execute, this, std::placeholders::_1), goal_handle}.detach();
     }
 
@@ -106,10 +121,11 @@ namespace local_planning
 
         std::shared_ptr<geometry_msgs::msg::PoseStamped> next_waypoint =
             std::make_shared<geometry_msgs::msg::PoseStamped>(goal->next_waypoint);
+        auto result = std::make_shared<TrajectoryGeneration::Result>();
 
+        // TODO: each generator will have its own thread 
         // pass into generators
         for (const auto &generator: this->trajectory_generators) {
-            RCLCPP_INFO(get_logger(), "Constructing trajectory");
             planning_interfaces::msg::Trajectory trajectory; 
 
             std_msgs::msg::Header header;
@@ -127,19 +143,26 @@ namespace local_planning
             score.scale = 1.0;
             trajectory.score = score; 
 
-
-
-
             auto feedback = std::make_shared<TrajectoryGeneration::Feedback>();
             feedback->trajectory = trajectory;
             goal_handle->publish_feedback(feedback);
             all_trajectories->trajectories.push_back(trajectory);
+
+            if (goal_handle->is_canceling())
+            {
+                goal_handle->canceled(result);
+                active_goal_ = nullptr; // release the active goal checker
+                RCLCPP_DEBUG(this->get_logger(), "Goal canceled");
+                return;
+            }
+            
         }
 
 
-        auto result = std::make_shared<TrajectoryGeneration::Result>();
         result->trajectories = *all_trajectories;
         goal_handle->succeed(result);
+        active_goal_ = nullptr; // release the active goal checker
+        RCLCPP_DEBUG(this->get_logger(), "Goal reached");
     }
 
 } // local_planning
