@@ -23,7 +23,7 @@ namespace local_planning
             ~TrajectoryGeneratorROS();
 
             void registerTrajectoryGenerator(const std::shared_ptr<TrajectoryGeneratorInterface> generator);
-
+            
         protected:
             // implement the lifecycle interface
             nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State &state) override;

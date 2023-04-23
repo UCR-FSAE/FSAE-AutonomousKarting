@@ -18,12 +18,13 @@ namespace local_planning
           name_(name),
           parent_namespace_(parent_namespace)
     {
-        this->declare_parameter("debug", false);
+        this->declare_parameter("debug", true);
         
         if (this->get_parameter("debug").as_bool())
         {
             auto ret = rcutils_logging_set_logger_level(get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
         }
+        RCLCPP_INFO(this->get_logger(), "TrajectoryGeneratorROS initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
     }
 
     TrajectoryGeneratorROS ::~TrajectoryGeneratorROS()
@@ -78,7 +79,7 @@ namespace local_planning
     rclcpp_action::GoalResponse
     TrajectoryGeneratorROS::handle_goal(const rclcpp_action::GoalUUID &uuid, std::shared_ptr<const TrajectoryGeneration::Goal> goal)
     {
-        // RCLCPP_INFO(get_logger(), "handle_goal");
+        RCLCPP_DEBUG(get_logger(), "handle_goal");
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
 

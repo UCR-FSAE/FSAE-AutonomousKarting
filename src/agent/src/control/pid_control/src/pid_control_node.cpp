@@ -178,7 +178,7 @@ namespace pid_controller
         std::thread{std::bind(&PIDControlActionServer::execute, this, _1), goal_handle}.detach();
     }
    
-   void PIDControlActionServer::onLatestOdomReceived(const nav_msgs::msg::Odometry::SharedPtr msg)
+    void PIDControlActionServer::onLatestOdomReceived(const nav_msgs::msg::Odometry::SharedPtr msg)
     {
         std::lock_guard<std::mutex> lock(odom_mutex_);
         this->latest_odom = msg;

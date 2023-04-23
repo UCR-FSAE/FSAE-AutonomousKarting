@@ -12,17 +12,15 @@ from pathlib import Path
 
 def generate_launch_description():
     ld = launch.LaunchDescription()
+    base_path = Path(get_package_share_directory("local_planner_manager"))
 
+    config_file = base_path / "params" / "configs.yaml"
+    assert config_file.exists()
     local_planner_manager_node = Node(
-        name="manager",
+        name="local_planner_manager",
         executable="local_planner_manager_node",
         package="local_planner_manager",
-        parameters=[
-            {
-                "manager_rate": LaunchConfiguration("manager_rate", default="0.5"),
-                "debug": False,
-            }
-        ],
+        parameters=[config_file.as_posix()],
     )
 
     lifecycle_manager = Node(
@@ -30,15 +28,7 @@ def generate_launch_description():
         executable="lifecycle_manager",
         name="lifecycle_manager_local_planning",
         output="screen",
-        parameters=[
-            {"use_sim_time": True},
-            {"autostart": True},
-            {
-                "node_names": [
-                    "/local_planner/manager",
-                ]
-            },
-        ],
+        parameters=[config_file.as_posix()],
     )
 
     # node

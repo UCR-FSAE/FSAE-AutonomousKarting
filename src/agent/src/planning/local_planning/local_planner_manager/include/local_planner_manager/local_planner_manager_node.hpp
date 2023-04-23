@@ -13,6 +13,8 @@
 #include <trajectory_picker/trajectory_picker_ros.hpp>
 #include "planning_interfaces/action/trajectory_generation.hpp"
 #include "planning_interfaces/srv/trajectory_scoring.hpp"
+#include "control_interfaces/action/control.hpp"
+
 namespace local_planning
 {
     class LocalPlannerManagerNode : public nav2_util::LifecycleNode
@@ -20,9 +22,14 @@ namespace local_planning
         using TrajectoryGeneration = planning_interfaces::action::TrajectoryGeneration;
         using GoalHandleTrajectoryGeneration = rclcpp_action::ClientGoalHandle<TrajectoryGeneration>;
 
+        using ControlAction = control_interfaces::action::Control;
+        using GoalHandleControlAction = rclcpp_action::ClientGoalHandle<ControlAction>;
     public:
         LocalPlannerManagerNode();
         ~LocalPlannerManagerNode();
+
+        void execute();
+
 
     protected:
         // implement the lifecycle interface
@@ -38,8 +45,7 @@ namespace local_planning
 
 
         /* execution */
-        void execute();
-        
+        void p_execute();
         rclcpp::TimerBase::SharedPtr execute_timer;
         int num_execution = 0;
         bool didReceiveAllMessages();
@@ -82,10 +88,7 @@ namespace local_planning
             const nav_msgs::msg::Odometry::SharedPtr odom,
             const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint);
         void register_generators();
-        std::shared_future<GoalHandleTrajectoryGeneration::SharedPtr> curr_generator_goal_future;
-
-
-
+        int num_generator_execution = 0;
 
         /* Trajectory Picker */
         std::shared_ptr<local_planning::TrajectoryPickerROS> trajectory_picker_node_;
@@ -94,6 +97,12 @@ namespace local_planning
         rclcpp::Subscription<planning_interfaces::msg::Trajectory>::SharedPtr best_trajectory_subscriber_;
         std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<planning_interfaces::msg::Trajectory>> possible_trajectory_publisher_;
 
+        /* control client */
+        rclcpp_action::Client<ControlAction>::SharedPtr control_action_client_;
+        void control_action_goal_response_callback(std::shared_future<GoalHandleControlAction::SharedPtr> future);
+        void control_action_feedback_callback(GoalHandleControlAction::SharedPtr future, const std::shared_ptr<const ControlAction::Feedback> feedback);
+        void control_action_result_callback(const GoalHandleControlAction::WrappedResult &result);
+        void control_send_goal(const nav_msgs::msg::Path::SharedPtr path, float target_spd);
 
     };
 } // local_planning

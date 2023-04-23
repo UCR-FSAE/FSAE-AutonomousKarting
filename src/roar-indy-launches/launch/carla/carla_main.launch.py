@@ -205,8 +205,8 @@ def generate_launch_description():
     ld.add_action(global_planner_launcher)
     ld.add_action(local_planner_manager)
     # ld.add_action(simple_local_planner_launcher)
-    # ld.add_action(roar_carla_control)
-    # ld.add_action(pid_control)
+    ld.add_action(roar_carla_control)
+    ld.add_action(pid_control)
 
     ld.add_action(lifecycle_manager)
     return ld

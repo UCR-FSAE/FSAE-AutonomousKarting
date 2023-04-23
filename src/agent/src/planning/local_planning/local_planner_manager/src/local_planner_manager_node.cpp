@@ -13,12 +13,16 @@ namespace local_planning
     {
         auto ret = rcutils_logging_set_logger_level(get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
     }
-  }
 
+    RCLCPP_INFO(this->get_logger(), "LocalPlannerManagerNode initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
+  }
   LocalPlannerManagerNode ::~LocalPlannerManagerNode()
   {
   }
 
+  /**
+   * lifecycle
+  */
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_configure(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_DEBUG(this->get_logger(), "on_configure");
@@ -32,6 +36,7 @@ namespace local_planning
    
 
     trajectory_generator_node_ = std::make_shared<local_planning::TrajectoryGeneratorROS>("generator", std::string{get_namespace()}, "trajectory");
+    trajectory_generator_node_->set_parameter(rclcpp::Parameter("debug", this->get_parameter("debug").as_bool()));
     trajectory_generator_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_generator_node_);
     this->register_generators();
     trajectory_generator_node_->configure();
@@ -46,9 +51,12 @@ namespace local_planning
     costmap_node_ = rclcpp::Node::make_shared("get_costmap_node");
     costmap_client_ = costmap_node_->create_client<nav2_msgs::srv::GetCostmap>("/local_costmap/get_costmap");
 
+
+    this->control_action_client_ = rclcpp_action::create_client<ControlAction>(
+        this,
+        "pid_control");
     return nav2_util::CallbackReturn::SUCCESS;
   }
-
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_activate(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_DEBUG(this->get_logger(), "on_activate");
@@ -69,7 +77,6 @@ namespace local_planning
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
-
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_deactivate(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_DEBUG(this->get_logger(), "on_deactivate");
@@ -78,7 +85,6 @@ namespace local_planning
     trajectory_picker_node_->deactivate();
     return nav2_util::CallbackReturn::SUCCESS;
   }
-
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_cleanup(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_DEBUG(this->get_logger(), "on_cleanup");
@@ -89,7 +95,6 @@ namespace local_planning
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
-
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_shutdown(const rclcpp_lifecycle::State &state)
   {
     RCLCPP_DEBUG(this->get_logger(), "on_shutdown");
@@ -110,21 +115,26 @@ namespace local_planning
     ps.header = header; 
     this->latest_waypoint_ = std::make_shared<geometry_msgs::msg::PoseStamped>(ps);
   }
-
   void LocalPlannerManagerNode::onLatestOdomReceived(nav_msgs::msg::Odometry::SharedPtr msg)
   {
     std::lock_guard<std::mutex> lock(odom_mutex_);
     this->latest_odom = msg;
   }
-
+  
   void LocalPlannerManagerNode::execute()
+  {
+    this->p_execute();
+  }
+
+  void LocalPlannerManagerNode::p_execute()
   {
     std::lock_guard<std::mutex> odom_lock(odom_mutex_);
     std::lock_guard<std::mutex> waypoint_lock(waypoint_mutex);
 
-    if (this->didReceiveAllMessages() && num_execution == 0) // only one request at a time
+    if (this->canExecute()) // only one request at a time
     {
       num_execution += 1;
+      num_generator_execution += 1;
       latest_costmap_ = this->p_GetLatestCostmap();
       if (latest_costmap_ != nullptr)
       {
@@ -156,13 +166,14 @@ namespace local_planning
     }
   }
 
-  /* trajectory generation*/
+  /**
+   * trajectory generation
+  */
   void LocalPlannerManagerNode::register_generators()
   {
     std::shared_ptr<local_planning::DummyTrajectoryGenerator> dummy_generator = std::make_shared<local_planning::DummyTrajectoryGenerator>();
     this->trajectory_generator_node_->registerTrajectoryGenerator(dummy_generator);
   }
-
   void LocalPlannerManagerNode::send_trajectory_generator_action(
       const nav2_msgs::msg::Costmap::SharedPtr costmap,
       const nav_msgs::msg::Odometry::SharedPtr odom,
@@ -183,11 +194,21 @@ namespace local_planning
         std::bind(&LocalPlannerManagerNode::trajectory_generator_feedback_callback, this, _1, _2);
     send_goal_options.result_callback =
         std::bind(&LocalPlannerManagerNode::trajectory_generator_result_callback, this, _1);
-    curr_generator_goal_future = this->trajectory_generator_client->async_send_goal(goal_msg, send_goal_options);
+    this->trajectory_generator_client->async_send_goal(goal_msg, send_goal_options);
+
+
   }
   void LocalPlannerManagerNode::trajectory_generator_goal_response_callback(std::shared_future<GoalHandleTrajectoryGeneration::SharedPtr> future)
   {
-
+    auto goal_handle = future.get();
+    if (!goal_handle)
+    {
+        RCLCPP_ERROR(this->get_logger(), "[trajectory_generator_goal_response_callback] was rejected by server");
+    }
+    else
+    {
+        RCLCPP_DEBUG(this->get_logger(), "[trajectory_generator_goal_response_callback] accepted by server, waiting for result");
+    }  
   }
 
   void LocalPlannerManagerNode::trajectory_generator_feedback_callback(
@@ -197,10 +218,8 @@ namespace local_planning
     RCLCPP_DEBUG(get_logger(), "Feedback contains trajectory of length [%d] and raw_score: [%.3f]", feedback->trajectory.trajectory.poses.size(), feedback->trajectory.score.raw_score);
     this->possible_trajectory_publisher_->publish(feedback.get()->trajectory);
   }
-
   void LocalPlannerManagerNode::trajectory_generator_result_callback(const GoalHandleTrajectoryGeneration::WrappedResult &result)
   {
-    RCLCPP_DEBUG(get_logger(), "Result callback");
     switch (result.code)
     {
       case rclcpp_action::ResultCode::SUCCEEDED:
@@ -216,28 +235,77 @@ namespace local_planning
         RCLCPP_ERROR(this->get_logger(), "Unknown result code");
         break;
     }
-    this->num_execution -= 1;
+    this->num_generator_execution -= 1;
   }
-
   void LocalPlannerManagerNode::on_best_trajectory_publication_received(const planning_interfaces::msg::Trajectory::SharedPtr msg)
   {
     RCLCPP_DEBUG(get_logger(), "on_best_trajectory_publication_received");
     // TODO: terminate the curren trajectory computation immediately because best trajectory is already published
-    
+    RCLCPP_DEBUG(get_logger(), "cancelling generator goals");
     this->trajectory_generator_client->async_cancel_all_goals();
+
+    this->control_send_goal(std::make_shared<nav_msgs::msg::Path>(msg->trajectory), 10.0);
   }
 
+  /**
+  * Controller interaction
+  */
+  void
+  LocalPlannerManagerNode::control_send_goal(const nav_msgs::msg::Path::SharedPtr path, float target_spd)
+  {
+    RCLCPP_DEBUG(get_logger(), "sending goal to controller");
 
-  /* helper methods */
+    using namespace std::placeholders;
+
+    if (!this->control_action_client_->wait_for_action_server())
+    {
+      RCLCPP_ERROR(this->get_logger(), "Control action server not available, not sending goal");
+      return;
+    }
+    auto goal_msg = ControlAction::Goal();
+    goal_msg.path = *path;
+    goal_msg.target_spd = target_spd;
+
+    RCLCPP_DEBUG(this->get_logger(), "Sending goal: target_spd: %f", target_spd);
+
+    auto send_goal_options = rclcpp_action::Client<ControlAction>::SendGoalOptions();
+    send_goal_options.goal_response_callback = std::bind(&LocalPlannerManagerNode::control_action_goal_response_callback, this, _1);
+    send_goal_options.feedback_callback = std::bind(&LocalPlannerManagerNode::control_action_feedback_callback, this, _1, _2);
+    send_goal_options.result_callback = std::bind(&LocalPlannerManagerNode::control_action_result_callback, this, _1);
+    this->control_action_client_->async_send_goal(goal_msg, send_goal_options);
+  }
+
+  void LocalPlannerManagerNode::control_action_goal_response_callback(std::shared_future<GoalHandleControlAction::SharedPtr> future)
+  {
+    auto goal_handle = future.get();
+    if (!goal_handle)
+    {
+        RCLCPP_ERROR(this->get_logger(), "[control_action_goal_response_callback] was rejected by server");
+    }
+    else
+    {
+        RCLCPP_DEBUG(this->get_logger(), "[control_action_goal_response_callback] accepted by server, waiting for result");
+    }  
+  }
+  void LocalPlannerManagerNode::control_action_feedback_callback(GoalHandleControlAction::SharedPtr future, const std::shared_ptr<const ControlAction::Feedback> feedback)
+  {
+    // Left empty on purpose
+  }
+  void LocalPlannerManagerNode::control_action_result_callback(const GoalHandleControlAction::WrappedResult &result)
+  {
+    this->num_execution -= 1;
+  }
+  /**
+   * helper methods
+  */
   bool LocalPlannerManagerNode::canExecute()
   {
-    if (this->didReceiveAllMessages() && num_execution < 1)
+    if (this->didReceiveAllMessages() && num_execution < 1 && num_generator_execution < 1)
     {
       return true; 
     } 
     return false;
   }
-
   bool LocalPlannerManagerNode::didReceiveAllMessages()
   {
     return this->latest_odom != nullptr && this->latest_waypoint_ != nullptr; 
@@ -261,6 +329,8 @@ namespace local_planning
     RCLCPP_INFO(this->get_logger(), "      z: %f", map_metadata.origin.orientation.z);
     RCLCPP_INFO(this->get_logger(), "      w: %f", map_metadata.origin.orientation.w);
   }
+
+  
 } // local_planning
 
 int main(int argc, char **argv)

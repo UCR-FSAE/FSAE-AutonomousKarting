@@ -2,9 +2,9 @@ lifecycle_manager_main:
   ros__parameters:
     autostart: true
     node_names: ["/costmap_node_manager",
-                 "/global_planner_manager"]
+                 "/global_planner_manager",
                 #  "/simple_local_planner",
-                #  "/pid_control"]
+                 "/pid_control"]
     use_sim_time: true
 
 pointcloud_to_laserscan:
