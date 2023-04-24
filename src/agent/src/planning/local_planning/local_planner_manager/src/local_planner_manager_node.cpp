@@ -54,7 +54,7 @@ namespace local_planning
 
     this->control_action_client_ = rclcpp_action::create_client<ControlAction>(
         this,
-        "pid_control");
+        "/pid_control");
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_activate(const rclcpp_lifecycle::State &state)
@@ -223,16 +223,16 @@ namespace local_planning
     switch (result.code)
     {
       case rclcpp_action::ResultCode::SUCCEEDED:
-        RCLCPP_DEBUG(this->get_logger(), "Result received");
+        RCLCPP_DEBUG(this->get_logger(), "trajectory_generator result received");
         break;
       case rclcpp_action::ResultCode::ABORTED:
-        RCLCPP_DEBUG(this->get_logger(), "Goal was aborted");
+        RCLCPP_DEBUG(this->get_logger(), "trajectory_generator goal was aborted");
         break;
       case rclcpp_action::ResultCode::CANCELED:
-        RCLCPP_DEBUG(this->get_logger(), "Goal was canceled");
+        RCLCPP_DEBUG(this->get_logger(), "trajectory_generator goal was canceled");
         break;
       default:
-        RCLCPP_ERROR(this->get_logger(), "Unknown result code");
+        RCLCPP_ERROR(this->get_logger(), "trajectory_generator unknown result code");
         break;
     }
     this->num_generator_execution -= 1;

@@ -160,7 +160,7 @@ namespace pid_controller
         const rclcpp_action::GoalUUID &uuid,
         std::shared_ptr<const ControlAction::Goal> goal)
     {
-        // RCLCPP_INFO(this->get_logger(), "Received goal request with [%d] waypoints", goal->path.poses.size());
+        RCLCPP_INFO(this->get_logger(), "Received goal request with [%d] waypoints", goal->path.poses.size());
         (void)uuid;
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
