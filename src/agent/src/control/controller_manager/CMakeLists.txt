@@ -21,8 +21,15 @@ find_package(trajectory_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(control_interfaces REQUIRED)
 
-add_executable(controller_manager_node src/controller_manager_node.cpp)
-ament_target_dependencies(controller_manager_node
+include_directories(
+  include
+)
+
+add_library(controller_manager_core SHARED
+  src/controller_manager_ros.cpp
+)
+
+set(dependencies
   rclcpp
   rclcpp_action
   std_msgs
@@ -32,14 +39,44 @@ ament_target_dependencies(controller_manager_node
   control_interfaces
 )
 
-target_include_directories(controller_manager_node PUBLIC
+ament_target_dependencies(controller_manager_core
+  ${dependencies}
+)
+
+add_executable(controller_manager src/controller_manager_node.cpp)
+ament_target_dependencies(controller_manager
+  ${dependencies}
+)
+
+target_link_libraries(controller_manager
+  controller_manager_core
+)
+
+target_include_directories(controller_manager PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
-install(TARGETS controller_manager_node
-  DESTINATION lib/${PROJECT_NAME})
+install(TARGETS
+  controller_manager_core
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+install(TARGETS
+  controller_manager
+  RUNTIME DESTINATION lib/${PROJECT_NAME})
+
+install(DIRECTORY include/
+  DESTINATION include/
+)
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY params DESTINATION share/${PROJECT_NAME})
+
+ament_export_include_directories(include)
+ament_export_libraries(controller_manager_core)
+ament_export_dependencies(${dependencies})
+ament_export_definitions("PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
 ament_package()
