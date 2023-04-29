@@ -1,6 +1,6 @@
 global_planner_manager:
   ros__parameters:
-    debug: true
+    debug: false
 
 waypoint_follower_server_node:
   ros__parameters:
