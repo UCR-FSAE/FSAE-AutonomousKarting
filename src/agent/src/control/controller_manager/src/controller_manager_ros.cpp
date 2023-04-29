@@ -29,6 +29,10 @@ namespace controller
   nav2_util::CallbackReturn ControllerManagerNode::on_configure(const rclcpp_lifecycle::State &state) 
   {
     RCLCPP_DEBUG(get_logger(), "on_configure");
+    this->odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+        "/carla/ego_vehicle/odometry", rclcpp::SystemDefaultsQoS(),
+        std::bind(&ControllerManagerNode::onLatestOdomReceived, this, std::placeholders::_1));
+   
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn ControllerManagerNode::on_activate(const rclcpp_lifecycle::State &state) 
@@ -57,7 +61,8 @@ namespace controller
 
   void ControllerManagerNode::onLatestOdomReceived(nav_msgs::msg::Odometry::SharedPtr msg)
   {
-
+    std::lock_guard<std::mutex> lock(odom_mutex_);
+    this->latest_odom = msg;
   }
 
   /**

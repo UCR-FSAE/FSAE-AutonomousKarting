@@ -54,7 +54,7 @@ namespace local_planning
 
     this->control_action_client_ = rclcpp_action::create_client<ControlAction>(
         this,
-        "/pid_control");
+        "/controller/manager");
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_activate(const rclcpp_lifecycle::State &state)
@@ -195,9 +195,8 @@ namespace local_planning
     send_goal_options.result_callback =
         std::bind(&LocalPlannerManagerNode::trajectory_generator_result_callback, this, _1);
     this->trajectory_generator_client->async_send_goal(goal_msg, send_goal_options);
-
-
   }
+  
   void LocalPlannerManagerNode::trajectory_generator_goal_response_callback(std::shared_future<GoalHandleTrajectoryGeneration::SharedPtr> future)
   {
     auto goal_handle = future.get();
@@ -300,7 +299,7 @@ namespace local_planning
   */
   bool LocalPlannerManagerNode::canExecute()
   {
-    if (this->didReceiveAllMessages() && num_execution < 1 && num_generator_execution < 1)
+    if (this->didReceiveAllMessages() && num_generator_execution < 1)
     {
       return true; 
     } 

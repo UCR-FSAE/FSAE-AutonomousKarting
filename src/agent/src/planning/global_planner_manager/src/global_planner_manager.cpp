@@ -19,8 +19,14 @@ namespace gokart_planner
   {
     RCLCPP_INFO(get_logger(), "Creating GlobalPlannerManager Node");
     this->declare_parameter("waypoint_file_path", "./data/recording.txt");
-    this->declare_parameter("debug", false);
-    RCLCPP_INFO(get_logger(), "Debug mode is %s", this->get_parameter("debug").as_bool() ? "ON" : "OFF");
+        this->declare_parameter("debug", false);
+    
+    if (this->get_parameter("debug").as_bool())
+    {
+        auto ret = rcutils_logging_set_logger_level(get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
+    }
+    RCLCPP_INFO(this->get_logger(), "GlobalPlannerManager initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
+
     this->current_manager_status_ = ManagerStatus::NoGoal;
   }
   
@@ -61,14 +67,8 @@ namespace gokart_planner
   nav2_util::CallbackReturn
   GlobalPlannerManager::on_activate(const rclcpp_lifecycle::State &state)
   {
-    RCLCPP_INFO(get_logger(), "Activating");
+    RCLCPP_DEBUG(get_logger(), "Activating");
     this->next_waypoint_visualization_publisher_->on_activate();
-
-    if (this->current_manager_status_ != ManagerStatus::GoalOk)
-    {
-      RCLCPP_INFO(get_logger(), "Cannot activate because manager status is: %d", this->current_manager_status_);
-      return nav2_util::CallbackReturn::FAILURE;
-    }
     this->next_waypoint_publisher_->on_activate();
     this->global_path_publisher_->on_activate();
     return nav2_util::CallbackReturn::SUCCESS;
@@ -77,7 +77,7 @@ namespace gokart_planner
   nav2_util::CallbackReturn
   GlobalPlannerManager::on_deactivate(const rclcpp_lifecycle::State &state)
   {
-    RCLCPP_INFO(get_logger(), "Deactivating");
+    RCLCPP_DEBUG(get_logger(), "Deactivating");
 
     this->next_waypoint_visualization_publisher_->on_deactivate();
     
@@ -89,7 +89,7 @@ namespace gokart_planner
   nav2_util::CallbackReturn
   GlobalPlannerManager::on_cleanup(const rclcpp_lifecycle::State &state)
   {
-    RCLCPP_INFO(get_logger(), "Cleaning up");
+    RCLCPP_DEBUG(get_logger(), "Cleaning up");
     // nav2_waypoint_follower_->cleanup();
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -97,7 +97,7 @@ namespace gokart_planner
   nav2_util::CallbackReturn
   GlobalPlannerManager::on_shutdown(const rclcpp_lifecycle::State &state)
   {
-    RCLCPP_INFO(get_logger(), "Shutting Down");
+    RCLCPP_DEBUG(get_logger(), "Shutting Down");
     // nav2_waypoint_follower_->shutdown();
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -128,7 +128,7 @@ namespace gokart_planner
     }
     else
     {
-      RCLCPP_INFO(this->get_logger(), "Goal accepted by waypoint follower server, manager is ready to transition to Activate State");
+      RCLCPP_DEBUG(this->get_logger(), "Goal accepted by waypoint follower server, manager is ready to transition to Activate State");
       this->current_manager_status_ = ManagerStatus::GoalOk;
     }
   }
@@ -153,7 +153,6 @@ namespace gokart_planner
       marker.color.a = 1.0;
       marker.lifetime = rclcpp::Duration(0, 1000000000); // 1 second
       this->next_waypoint_visualization_publisher_->publish(marker);
-      RCLCPP_INFO(get_logger(), "Publishing");
     }
   }
 
