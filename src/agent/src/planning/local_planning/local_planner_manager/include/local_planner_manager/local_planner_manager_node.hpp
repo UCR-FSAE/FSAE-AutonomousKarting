@@ -99,6 +99,7 @@ namespace local_planning
 
         /* control client */
         rclcpp_action::Client<ControlAction>::SharedPtr control_action_client_;
+        std::string controllerServerRoute;
         void control_action_goal_response_callback(std::shared_future<GoalHandleControlAction::SharedPtr> future);
         void control_action_feedback_callback(GoalHandleControlAction::SharedPtr future, const std::shared_ptr<const ControlAction::Feedback> feedback);
         void control_action_result_callback(const GoalHandleControlAction::WrappedResult &result);

@@ -43,8 +43,18 @@ namespace controller
         std::mutex odom_mutex_;
         void onLatestOdomReceived(nav_msgs::msg::Odometry::SharedPtr msg);
 
-        rclcpp_action::Server<ControlAction>::SharedPtr action_server_;
 
+        /**
+         * action server
+        */
+        rclcpp_action::Server<ControlAction>::SharedPtr action_server_;
+        rclcpp_action::GoalResponse handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const ControlAction::Goal> goal);
+        rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<GoalHandleControlAction> goal_handle);
+        void handle_accepted(const std::shared_ptr<GoalHandleControlAction> goal_handle);
+
+        /**
+         * control publisher
+        */
         std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<ackermann_msgs::msg::AckermannDriveStamped>> ackermann_publisher_;
 
     };

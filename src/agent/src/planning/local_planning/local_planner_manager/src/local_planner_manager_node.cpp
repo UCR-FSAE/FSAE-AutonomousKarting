@@ -13,8 +13,11 @@ namespace local_planning
     {
         auto ret = rcutils_logging_set_logger_level(get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
     }
+    this->declare_parameter("controller_route", "/controller/manager");
+    this->controllerServerRoute = this->get_parameter("controller_route").as_string();
 
     RCLCPP_INFO(this->get_logger(), "LocalPlannerManagerNode initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
+    RCLCPP_INFO(this->get_logger(), "controller route: [%s]", this->controllerServerRoute.c_str());
   }
   LocalPlannerManagerNode ::~LocalPlannerManagerNode()
   {
@@ -54,7 +57,7 @@ namespace local_planning
 
     this->control_action_client_ = rclcpp_action::create_client<ControlAction>(
         this,
-        "/controller/manager");
+        this->controllerServerRoute);
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_activate(const rclcpp_lifecycle::State &state)
@@ -252,7 +255,8 @@ namespace local_planning
   void
   LocalPlannerManagerNode::control_send_goal(const nav_msgs::msg::Path::SharedPtr path, float target_spd)
   {
-    RCLCPP_DEBUG(get_logger(), "sending goal to controller");
+    
+    RCLCPP_DEBUG(get_logger(), "sending goal to controller at [%s]", this->controllerServerRoute.c_str());
 
     using namespace std::placeholders;
 

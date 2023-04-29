@@ -32,7 +32,13 @@ namespace controller
     this->odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
         "/carla/ego_vehicle/odometry", rclcpp::SystemDefaultsQoS(),
         std::bind(&ControllerManagerNode::onLatestOdomReceived, this, std::placeholders::_1));
-   
+
+    this->action_server_ = rclcpp_action::create_server<ControlAction>(
+      this,
+      "fibonacci",
+      std::bind(&ControllerManagerNode::handle_goal, this, std::placeholders::_1,std::placeholders:: _2),
+      std::bind(&ControllerManagerNode::handle_cancel, this, std::placeholders::_1),
+      std::bind(&ControllerManagerNode::handle_accepted, this, std::placeholders::_1));
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn ControllerManagerNode::on_activate(const rclcpp_lifecycle::State &state) 
@@ -63,6 +69,25 @@ namespace controller
   {
     std::lock_guard<std::mutex> lock(odom_mutex_);
     this->latest_odom = msg;
+  }
+
+
+  /**
+   * Action server
+  */
+  rclcpp_action::GoalResponse ControllerManagerNode::handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const ControlAction::Goal> goal)
+  {
+    RCLCPP_DEBUG(get_logger(), "handle_goal");
+    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+  }
+  rclcpp_action::CancelResponse ControllerManagerNode::handle_cancel(const std::shared_ptr<GoalHandleControlAction> goal_handle)
+  {
+    RCLCPP_DEBUG(get_logger(), "handle_cancel");
+    return rclcpp_action::CancelResponse::ACCEPT;
+  }
+  void ControllerManagerNode::handle_accepted(const std::shared_ptr<GoalHandleControlAction> goal_handle)
+  {
+    RCLCPP_DEBUG(get_logger(), "handle_accepted");
   }
 
   /**
