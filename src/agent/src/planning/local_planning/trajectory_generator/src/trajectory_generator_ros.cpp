@@ -48,8 +48,6 @@ namespace local_planning
         RCLCPP_INFO(this->get_logger(), "TrajectoryGeneratorROS initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
     }
 
-
-
     TrajectoryGeneratorROS ::~TrajectoryGeneratorROS()
     {
     }

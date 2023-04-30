@@ -27,6 +27,7 @@ include_directories(
 
 add_library(controller_manager_core SHARED
   src/controller_manager_ros.cpp
+  src/pid_controller.cpp
 )
 
 set(dependencies

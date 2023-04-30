@@ -2,14 +2,7 @@
 
 namespace controller 
 {
-    void 
-    PIDController::setup(const std::map<const std::string, boost::any> dict)
-    {
-
-    }
-
-    void 
-    PIDController::update(const std::map<const std::string, boost::any> dict)
+    void PIDController::setup(const std::map<const std::string, boost::any> dict)
     {
 
     }

@@ -9,9 +9,13 @@
 #include "control_interfaces/action/control.hpp"
 #include <nav2_util/lifecycle_node.hpp>
 #include <ackermann_msgs/msg/ackermann_drive_stamped.hpp>
+#include "controller_manager/controller_interface.hpp"
 
 namespace controller
 {
+    enum Algorithms {
+        PID,
+    };
     class ControllerManagerNode : public nav2_util::LifecycleNode
     {
         using ControlAction = control_interfaces::action::Control;
@@ -20,6 +24,9 @@ namespace controller
         public:
             ControllerManagerNode();
             ~ControllerManagerNode();
+
+            void registerControlAlgorithm(const Algorithms algo, const std::map<const std::string, boost::any> configs);
+
 
     protected:
         // implement the lifecycle interface
@@ -59,6 +66,11 @@ namespace controller
          * control publisher
         */
         std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<ackermann_msgs::msg::AckermannDriveStamped>> ackermann_publisher_;
+
+        /**
+         * control algorithm registry
+        */
+       std::shared_ptr<ControllerInterface> controller; 
 
     };
 

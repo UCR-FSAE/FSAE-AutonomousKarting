@@ -2,6 +2,7 @@
 #include <rclcpp/node_interfaces/node_base_interface.hpp>
 #include <rclcpp_lifecycle/state.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
+#include <controller_manager/pid_controller.hpp>
 
 namespace controller
 {
@@ -16,6 +17,11 @@ namespace controller
 
     RCLCPP_INFO(this->get_logger(), "ControllerManagerNode initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
     this->stop_flag = true;
+
+
+    // TODO: load config from parameters
+    std::map<const std::string, boost::any> dict = {{"key1", 42}, {"key2", std::string("hello")}};
+    this->registerControlAlgorithm(PID, dict); 
   }
   ControllerManagerNode ::~ControllerManagerNode()
   {
@@ -63,7 +69,7 @@ namespace controller
   }
 
   /**
-   * subscribers 
+   * subscriber
   */
   void ControllerManagerNode::onLatestOdomReceived(nav_msgs::msg::Odometry::SharedPtr msg)
   {
@@ -148,6 +154,24 @@ namespace controller
         return false;
     }
     return true;
+  }
+
+  void ControllerManagerNode::registerControlAlgorithm(const Algorithms algo, const std::map<const std::string, boost::any> configs)
+  {
+    switch (algo)
+    {
+      case PID:
+        this->controller = std::make_shared<controller::PIDController>();
+        break;
+      default:
+        RCLCPP_ERROR(get_logger(), "Unable to match control algorithm");
+        break;
+    }
+    if (this->controller != nullptr)
+    {
+      this->controller->setup(configs);
+    }
+    
   }
 
 }
