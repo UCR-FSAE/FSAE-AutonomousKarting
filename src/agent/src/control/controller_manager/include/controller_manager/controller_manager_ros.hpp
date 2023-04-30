@@ -30,11 +30,12 @@ namespace controller
         nav2_util::CallbackReturn on_shutdown(const rclcpp_lifecycle::State &state) override;
 
         // execution
-        void p_execute();
+        void p_execute(const std::shared_ptr<GoalHandleControlAction> goal_handle);
         int num_execution = 0;
         bool canExecute();
         std::thread execution_thread_;
-        std::atomic<bool> thread_mutex;
+        std::atomic<bool> stop_flag;
+
 
         /* Odometry */
         std::shared_ptr<nav_msgs::msg::Odometry> latest_odom;
@@ -51,6 +52,8 @@ namespace controller
         rclcpp_action::GoalResponse handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const ControlAction::Goal> goal);
         rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<GoalHandleControlAction> goal_handle);
         void handle_accepted(const std::shared_ptr<GoalHandleControlAction> goal_handle);
+        std::shared_ptr<GoalHandleControlAction> active_goal_; // use this to ensure that only one goal is executing at a time
+        std::mutex active_goal_mutex_;
 
         /**
          * control publisher

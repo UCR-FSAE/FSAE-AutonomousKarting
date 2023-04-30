@@ -38,13 +38,18 @@ namespace local_planning
         std::bind(&LocalPlannerManagerNode::onLatestOdomReceived, this, std::placeholders::_1));
    
 
-    trajectory_generator_node_ = std::make_shared<local_planning::TrajectoryGeneratorROS>("generator", std::string{get_namespace()}, "trajectory");
-    trajectory_generator_node_->set_parameter(rclcpp::Parameter("debug", this->get_parameter("debug").as_bool()));
+    trajectory_generator_node_ = std::make_shared<local_planning::TrajectoryGeneratorROS>("generator", 
+                                                  std::string{get_namespace()}, 
+                                                  "trajectory", 
+                                                  this->get_parameter("debug").as_bool());
     trajectory_generator_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_generator_node_);
     this->register_generators();
     trajectory_generator_node_->configure();
 
-    trajectory_picker_node_ = std::make_shared<local_planning::TrajectoryPickerROS>("picker", std::string{get_namespace()}, "trajectory");
+    trajectory_picker_node_ = std::make_shared<local_planning::TrajectoryPickerROS>("picker", 
+                                                                                    std::string{get_namespace()}, 
+                                                                                    "trajectory", 
+                                                                                    this->get_parameter("debug").as_bool());
     trajectory_picker_thread_ = std::make_unique<nav2_util::NodeThread>(trajectory_picker_node_);
     trajectory_picker_node_->configure();
 
@@ -242,7 +247,6 @@ namespace local_planning
   void LocalPlannerManagerNode::on_best_trajectory_publication_received(const planning_interfaces::msg::Trajectory::SharedPtr msg)
   {
     RCLCPP_DEBUG(get_logger(), "on_best_trajectory_publication_received");
-    // TODO: terminate the curren trajectory computation immediately because best trajectory is already published
     RCLCPP_DEBUG(get_logger(), "cancelling generator goals");
     this->trajectory_generator_client->async_cancel_all_goals();
 
@@ -262,14 +266,15 @@ namespace local_planning
 
     if (!this->control_action_client_->wait_for_action_server())
     {
-      RCLCPP_ERROR(this->get_logger(), "Control action server not available, not sending goal");
+      RCLCPP_ERROR(this->get_logger(), "Control action server not available, not sending goal to controller");
       return;
     }
     auto goal_msg = ControlAction::Goal();
     goal_msg.path = *path;
     goal_msg.target_spd = target_spd;
+    goal_msg.overwrite_previous = true;
 
-    RCLCPP_DEBUG(this->get_logger(), "Sending goal: target_spd: %f", target_spd);
+    RCLCPP_INFO(this->get_logger(), "Sending goal - len(path)=[%d] | target_spd=[%f]",path->poses.size() ,target_spd);
 
     auto send_goal_options = rclcpp_action::Client<ControlAction>::SendGoalOptions();
     send_goal_options.goal_response_callback = std::bind(&LocalPlannerManagerNode::control_action_goal_response_callback, this, _1);
@@ -283,11 +288,11 @@ namespace local_planning
     auto goal_handle = future.get();
     if (!goal_handle)
     {
-        RCLCPP_ERROR(this->get_logger(), "[control_action_goal_response_callback] was rejected by server");
+        RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
     }
     else
     {
-        RCLCPP_DEBUG(this->get_logger(), "[control_action_goal_response_callback] accepted by server, waiting for result");
+        RCLCPP_DEBUG(this->get_logger(), "Goal accepted by server, waiting for result");
     }  
   }
   void LocalPlannerManagerNode::control_action_feedback_callback(GoalHandleControlAction::SharedPtr future, const std::shared_ptr<const ControlAction::Feedback> feedback)

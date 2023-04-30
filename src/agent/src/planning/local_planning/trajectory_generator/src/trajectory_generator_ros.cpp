@@ -11,7 +11,8 @@ namespace local_planning
     TrajectoryGeneratorROS::TrajectoryGeneratorROS(
         const std::string &name,
         const std::string &parent_namespace,
-        const std::string &local_namespace)
+        const std::string &local_namespace
+        )
         : LifecycleNode(name, "", true,
                         rclcpp::NodeOptions().arguments({"--ros-args", "-r", std::string("__ns:=") + nav2_util::add_namespaces(parent_namespace, local_namespace),
                                                          "--ros-args", "-r", name + ":" + std::string("__node:=") + name})),
@@ -26,6 +27,28 @@ namespace local_planning
         }
         RCLCPP_INFO(this->get_logger(), "TrajectoryGeneratorROS initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
     }
+    TrajectoryGeneratorROS::TrajectoryGeneratorROS(
+        const std::string &name,
+        const std::string &parent_namespace,
+        const std::string &local_namespace,
+        const bool is_debug
+        )
+        : LifecycleNode(name, "", true,
+                        rclcpp::NodeOptions().arguments({"--ros-args", "-r", std::string("__ns:=") + nav2_util::add_namespaces(parent_namespace, local_namespace),
+                                                         "--ros-args", "-r", name + ":" + std::string("__node:=") + name})),
+          name_(name),
+          parent_namespace_(parent_namespace)
+    {
+        this->declare_parameter("debug", is_debug);
+        
+        if (this->get_parameter("debug").as_bool())
+        {
+            auto ret = rcutils_logging_set_logger_level(get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
+        }
+        RCLCPP_INFO(this->get_logger(), "TrajectoryGeneratorROS initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
+    }
+
+
 
     TrajectoryGeneratorROS ::~TrajectoryGeneratorROS()
     {
@@ -79,35 +102,32 @@ namespace local_planning
     rclcpp_action::GoalResponse
     TrajectoryGeneratorROS::handle_goal(const rclcpp_action::GoalUUID &uuid, std::shared_ptr<const TrajectoryGeneration::Goal> goal)
     {
-        RCLCPP_DEBUG(get_logger(), "handle_goal");
-        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+        RCLCPP_DEBUG(get_logger(), "received goal - UUID=[%s]", rclcpp_action::to_string(uuid).c_str());
+        if (this->canExecute())
+        {
+            return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+        }
+        return rclcpp_action::GoalResponse::REJECT;
+        
     }
 
     rclcpp_action::CancelResponse
     TrajectoryGeneratorROS::handle_cancel(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle)
     {
         RCLCPP_DEBUG(get_logger(), "handle_cancel");
-        std::lock_guard<std::mutex> lock(mutex_);
         return rclcpp_action::CancelResponse::ACCEPT;
     }
 
     void TrajectoryGeneratorROS::handle_accepted(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle)
     {
-        RCLCPP_DEBUG(get_logger(), "handle_accepted");
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (active_goal_)
-        {
-            RCLCPP_DEBUG(this->get_logger(), "Another goal is already active");
-            TrajectoryGeneration::Result::SharedPtr result = std::make_shared<TrajectoryGeneration::Result>();
-            goal_handle->abort(result);
-            return;
-        }
-        active_goal_ = goal_handle;
+        RCLCPP_DEBUG(get_logger(), "handle_accepted - goal uuid: [%s]", rclcpp_action::to_string(goal_handle->get_goal_id()).c_str());
         std::thread{std::bind(&TrajectoryGeneratorROS::execute, this, std::placeholders::_1), goal_handle}.detach();
     }
 
     void TrajectoryGeneratorROS::execute(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle)
     {
+        std::lock_guard<std::mutex> lock(active_goal_mutex_);
+        active_goal_ = goal_handle;
         // prep for result
         std::shared_ptr<planning_interfaces::msg::Trajectories> all_trajectories = std::make_shared<planning_interfaces::msg::Trajectories>();
 
@@ -159,11 +179,21 @@ namespace local_planning
             
         }
 
-
         result->trajectories = *all_trajectories;
         goal_handle->succeed(result);
         active_goal_ = nullptr; // release the active goal checker
         RCLCPP_DEBUG(this->get_logger(), "Goal reached");
+    }
+
+    bool TrajectoryGeneratorROS::canExecute()
+    {
+        std::lock_guard<std::mutex> lock(active_goal_mutex_);
+        if (active_goal_)
+        {
+            RCLCPP_DEBUG(this->get_logger(), "Another goal is already active");
+            return false;
+        }
+        return true;
     }
 
 } // local_planning

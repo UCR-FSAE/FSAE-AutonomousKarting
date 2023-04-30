@@ -14,9 +14,16 @@ namespace local_planning
             const std::string &name,
             const std::string &parent_namespace,
             const std::string &local_namespace);
+        explicit TrajectoryPickerROS(
+            const std::string &name,
+            const std::string &parent_namespace,
+            const std::string &local_namespace,
+            const bool is_debug);
         ~TrajectoryPickerROS();
 
     protected:
+        void init(const bool is_debug);
+
         // implement the lifecycle interface
         nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State &state) override;
 

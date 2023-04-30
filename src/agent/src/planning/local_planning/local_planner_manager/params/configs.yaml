@@ -1,8 +1,8 @@
 local_planner:
   local_planner_manager:
     ros__parameters:
-      debug: true
-      manager_rate: 0.5
+      debug: false
+      manager_rate: 0.1
       use_sim_time: true
 lifecycle_manager_local_planning:
   ros__parameters:
