@@ -18,7 +18,6 @@ namespace controller
     RCLCPP_INFO(this->get_logger(), "ControllerManagerNode initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
     this->stop_flag = true;
 
-
     // TODO: load config from parameters
     std::map<const std::string, boost::any> dict = {{"key1", 42}, {"key2", std::string("hello")}};
     this->registerControlAlgorithm(PID, dict); 
@@ -123,9 +122,10 @@ namespace controller
       std::lock_guard<std::mutex> lock(active_goal_mutex_);
       active_goal_ = goal_handle;
       auto result = std::make_shared<ControlAction::Result>();
-
+      const nav_msgs::msg::Path::SharedPtr trajectory = std::make_shared<nav_msgs::msg::Path>(goal_handle->get_goal()->path);
       while (!this->stop_flag)
       {
+        // cancel
         if (goal_handle->is_canceling())
         {
             result->status = control_interfaces::action::Control::Result::NORMAL;
@@ -134,11 +134,22 @@ namespace controller
             return;
         }
 
-        result->status = control_interfaces::action::Control::Result::NORMAL;
-        goal_handle->succeed(result);
-        active_goal_ = nullptr; // release lock so that next iteration can execute
-        RCLCPP_DEBUG(get_logger(), "goal reached");
-        return;
+        // done
+        if (this->isDone(trajectory, this->latest_odom, this->closeness_threshold))
+        {
+          result->status = control_interfaces::action::Control::Result::NORMAL;
+          goal_handle->succeed(result);
+          active_goal_ = nullptr; // release lock so that next iteration can execute
+          RCLCPP_DEBUG(get_logger(), "goal reached");
+          return;
+        }
+
+        // run controller
+        ackermann_msgs::msg::AckermannDrive cmd = this->controller->compute(trajectory, this->latest_odom, {});
+        // ControlAction::Feedback feedback;
+        // feedback.
+        // goal_handle->publish_feedback();
+
       }
       result->status = -1;
       goal_handle->canceled(result);
