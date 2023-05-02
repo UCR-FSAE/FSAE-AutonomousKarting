@@ -2,23 +2,28 @@
 
 namespace controller 
 {
-    void PIDController::setup(const std::map<const std::string, boost::any> dict)
+    void PIDController::setTrajectory(const nav_msgs::msg::Path::SharedPtr trajectory)
     {
-
+        this->trajectory = trajectory;
     }
 
-    ackermann_msgs::msg::AckermannDrive 
-    PIDController::compute(
-                const nav_msgs::msg::Path::SharedPtr trajectory,
-                const nav_msgs::msg::Odometry::SharedPtr odom,
-                const std::map<const std::string, boost::any> extra
-                )
+    ControlResult 
+    PIDController::compute(const  nav_msgs::msg::Odometry::SharedPtr odom,
+                           std::mutex& odom_mutex,
+                           const std::map<const std::string, boost::any> extra)
     {
-        ackermann_msgs::msg::AckermannDrive result;
+        ControlResult result;
 
-        result.acceleration = 1.0;
-        result.steering_angle = 0.0;
+        ackermann_msgs::msg::AckermannDrive msg;
+
+        msg.acceleration = 1.0;
+        msg.steering_angle = 0.0;
+        result.drive = msg;
+        result.waypoint_index = 0;
+
         return result;
     }
+
+
 
 } // controller

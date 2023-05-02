@@ -6,16 +6,24 @@
 #include <map>
 #include <boost/any.hpp>
 #include <math.h>
+#include <mutex>
+
+struct ControlResult {
+  ackermann_msgs::msg::AckermannDrive drive;
+  size_t waypoint_index;
+};
 
 namespace controller 
 {
     class ControllerInterface
     {
         public: 
-            virtual void setup(std::map<const std::string, boost::any> dict) = 0;
-            virtual ackermann_msgs::msg::AckermannDrive compute(const nav_msgs::msg::Path::SharedPtr trajectory,
-                                                                const nav_msgs::msg::Odometry::SharedPtr odom,
-                                                                const std::map<const std::string, boost::any> extra) = 0;
+
+            virtual void setTrajectory(const nav_msgs::msg::Path::SharedPtr trajectory) = 0;
+            virtual ControlResult compute(const nav_msgs::msg::Odometry::SharedPtr odom,
+                                        std::mutex& odom_mutex,
+                                        const std::map<const std::string, boost::any> extra) = 0;
+
     };
 } // controller
 

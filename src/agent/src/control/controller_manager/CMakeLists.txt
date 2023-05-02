@@ -20,6 +20,7 @@ find_package(tf2_ros REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(control_interfaces REQUIRED)
+find_package(ackermann_msgs REQUIRED)
 
 include_directories(
   include
@@ -38,6 +39,7 @@ set(dependencies
   nav2_util
   nav2_core
   control_interfaces
+  ackermann_msgs
 )
 
 ament_target_dependencies(controller_manager_core

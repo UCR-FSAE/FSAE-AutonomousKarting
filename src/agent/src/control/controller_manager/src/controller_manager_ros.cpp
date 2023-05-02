@@ -9,6 +9,10 @@ namespace controller
   ControllerManagerNode::ControllerManagerNode() : LifecycleNode("manager", "controller", true)
   {
     this->declare_parameter("debug", false);
+    this->declare_parameter("frame_id", "ego_vehicle");
+    this->declare_parameter("loop_rate", 10.0);
+
+    this->frame_id = this->get_parameter("frame_id").as_string();
     
     if (this->get_parameter("debug").as_bool())
     {
@@ -44,16 +48,22 @@ namespace controller
       std::bind(&ControllerManagerNode::handle_goal, this, std::placeholders::_1,std::placeholders:: _2),
       std::bind(&ControllerManagerNode::handle_cancel, this, std::placeholders::_1),
       std::bind(&ControllerManagerNode::handle_accepted, this, std::placeholders::_1));
+    ackermann_publisher_ = this->create_publisher<ackermann_msgs::msg::AckermannDriveStamped>("/ackermann_drive", 10);
+
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn ControllerManagerNode::on_activate(const rclcpp_lifecycle::State &state) 
   {
     RCLCPP_DEBUG(get_logger(), "on_activate");
+    this->ackermann_publisher_->on_activate();
+
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn ControllerManagerNode::on_deactivate(const rclcpp_lifecycle::State &state) 
   {
     RCLCPP_DEBUG(get_logger(), "on_deactivate");
+    this->ackermann_publisher_->on_deactivate();
+
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn ControllerManagerNode::on_cleanup(const rclcpp_lifecycle::State &state) 
@@ -71,10 +81,10 @@ namespace controller
    * subscriber
   */
   void ControllerManagerNode::onLatestOdomReceived(nav_msgs::msg::Odometry::SharedPtr msg)
-  {
-    std::lock_guard<std::mutex> lock(odom_mutex_);
-    this->latest_odom = msg;
-  }
+{
+  std::lock_guard<std::mutex> lock(odom_mutex_);
+  this->latest_odom = msg;
+}
 
   /**
    * Action server
@@ -118,14 +128,16 @@ namespace controller
   */
   void ControllerManagerNode::p_execute(const std::shared_ptr<GoalHandleControlAction> goal_handle)
   {
-
       std::lock_guard<std::mutex> lock(active_goal_mutex_);
       active_goal_ = goal_handle;
       auto result = std::make_shared<ControlAction::Result>();
       const nav_msgs::msg::Path::SharedPtr trajectory = std::make_shared<nav_msgs::msg::Path>(goal_handle->get_goal()->path);
+      this->controller->setTrajectory(trajectory);
+      rclcpp::WallRate loop_rate(this->get_parameter("loop_rate").as_double());
+
       while (!this->stop_flag)
       {
-        // cancel
+        // check if goal is cancel
         if (goal_handle->is_canceling())
         {
             result->status = control_interfaces::action::Control::Result::NORMAL;
@@ -134,7 +146,13 @@ namespace controller
             return;
         }
 
-        // done
+        if (this->latest_odom == nullptr)
+        {
+            loop_rate.sleep();
+            continue;
+        }
+
+        // check if trajectory is done
         if (this->isDone(trajectory, this->latest_odom, this->closeness_threshold))
         {
           result->status = control_interfaces::action::Control::Result::NORMAL;
@@ -144,18 +162,27 @@ namespace controller
           return;
         }
 
-        // run controller
-        ackermann_msgs::msg::AckermannDrive cmd = this->controller->compute(trajectory, this->latest_odom, {});
-        // ControlAction::Feedback feedback;
+        // if not done, run controller
+        ControlResult controlResult = this->controller->compute(this->latest_odom, this->odom_mutex_, {});
+        auto feedback = std::make_shared<ControlAction::Feedback>();
+        feedback->curr_index = controlResult.waypoint_index; 
         // feedback.
-        // goal_handle->publish_feedback();
+        goal_handle->publish_feedback(feedback);
 
+        // publish control cmd
+        ackermann_msgs::msg::AckermannDriveStamped ackermannStamped = this->p_controlResultToAckermannStamped(controlResult);
+        this->ackermann_publisher_->publish(ackermannStamped);
+
+        loop_rate.sleep();
       }
       result->status = -1;
       goal_handle->canceled(result);
       RCLCPP_DEBUG(get_logger(), "execution loop exited abnormally");
-      
   }
+
+
+
+
   bool ControllerManagerNode::canExecute()
   {
     std::lock_guard<std::mutex> lock(active_goal_mutex_);
@@ -166,7 +193,6 @@ namespace controller
     }
     return true;
   }
-
   void ControllerManagerNode::registerControlAlgorithm(const Algorithms algo, const std::map<const std::string, boost::any> configs)
   {
     switch (algo)
@@ -178,11 +204,15 @@ namespace controller
         RCLCPP_ERROR(get_logger(), "Unable to match control algorithm");
         break;
     }
-    if (this->controller != nullptr)
-    {
-      this->controller->setup(configs);
-    }
-    
+  }
+
+  ackermann_msgs::msg::AckermannDriveStamped ControllerManagerNode::p_controlResultToAckermannStamped(ControlResult controlResult)
+  {
+    ackermann_msgs::msg::AckermannDriveStamped ackermannDriveStamped;
+    ackermannDriveStamped.drive = controlResult.drive;
+    ackermannDriveStamped.header.stamp = this->now();
+    ackermannDriveStamped.header.frame_id = this->frame_id;
+    return ackermannDriveStamped;
   }
 
 }

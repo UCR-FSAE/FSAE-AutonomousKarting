@@ -71,6 +71,14 @@ namespace controller
          * control algorithm registry
         */
        std::shared_ptr<ControllerInterface> controller; 
+
+        /**
+         * Helper functions
+        */
+        ackermann_msgs::msg::AckermannDriveStamped p_controlResultToAckermannStamped(ControlResult controlResult);
+
+
+
         /**
          * check if is close enough to the last index of the trajectory
          * 
@@ -98,6 +106,7 @@ namespace controller
         }
 
         float closeness_threshold = 1.0;
+        std::string frame_id;
     };
 
 } // controller
