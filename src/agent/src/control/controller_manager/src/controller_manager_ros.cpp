@@ -97,19 +97,9 @@ namespace controller
     RCLCPP_DEBUG(get_logger(), "received goal - goal uuid: [%s]", rclcpp_action::to_string(uuid).c_str());
 
     
-    if (this->canExecute())
+    if (this->canExecute(goal))
     {
       return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
-    }
-
-    if (goal->overwrite_previous && active_goal_ != nullptr)
-    {
-        RCLCPP_WARN(this->get_logger(), "OK cool, you used the hacky way. Overwriting previous goal... But please cancel request before sending new ones");
-        auto result = std::make_shared<ControlAction::Result>();
-        result->status = result->NORMAL;
-        active_goal_->abort(result);
-        active_goal_ = nullptr; // release the active goal checker
-        return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
     return rclcpp_action::GoalResponse::REJECT;
   }
@@ -178,13 +168,22 @@ namespace controller
 
 
 
-  bool ControllerManagerNode::canExecute()
+  bool ControllerManagerNode::canExecute(const std::shared_ptr<const ControlAction::Goal> goal)
   {
     std::lock_guard<std::mutex> lock(active_goal_mutex_);
     if (active_goal_)
     {
+      if (goal->overwrite_previous && active_goal_ != nullptr)
+      {
+          auto result = std::make_shared<ControlAction::Result>();
+          result->status = result->NORMAL;
+          active_goal_->abort(result);
+          active_goal_ = nullptr; // release the active goal checker
+          return true;
+      } else {
         RCLCPP_WARN(this->get_logger(), "Another goal is already active, please cancel [%s] before sending a new goal", rclcpp_action::to_string(active_goal_->get_goal_id()).c_str());
         return false;
+      }
     }
     return true;
   }

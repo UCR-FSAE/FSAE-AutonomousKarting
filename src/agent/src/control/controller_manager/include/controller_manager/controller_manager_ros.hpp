@@ -39,7 +39,7 @@ namespace controller
         // execution
         void p_execute(const std::shared_ptr<GoalHandleControlAction> goal_handle);
         int num_execution = 0;
-        bool canExecute();
+        bool canExecute(std::shared_ptr<const ControlAction::Goal> goal);
         rclcpp::TimerBase::SharedPtr execution_timer;
         void execution_callback();
 
