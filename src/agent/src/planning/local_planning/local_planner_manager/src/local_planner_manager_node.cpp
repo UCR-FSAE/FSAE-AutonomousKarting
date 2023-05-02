@@ -298,10 +298,27 @@ namespace local_planning
   void LocalPlannerManagerNode::control_action_feedback_callback(GoalHandleControlAction::SharedPtr future, const std::shared_ptr<const ControlAction::Feedback> feedback)
   {
     // Left empty on purpose
+    RCLCPP_DEBUG(get_logger(), "Currently at waypoint index: [{%d}]",feedback->curr_index);
   }
   void LocalPlannerManagerNode::control_action_result_callback(const GoalHandleControlAction::WrappedResult &result)
   {
     this->num_execution -= 1;
+
+        switch (result.code)
+    {
+      case rclcpp_action::ResultCode::SUCCEEDED:
+        RCLCPP_DEBUG(this->get_logger(), "control_action result success received");
+        break;
+      case rclcpp_action::ResultCode::ABORTED:
+        RCLCPP_DEBUG(this->get_logger(), "control_action goal was aborted");
+        break;
+      case rclcpp_action::ResultCode::CANCELED:
+        RCLCPP_DEBUG(this->get_logger(), "control_action goal was canceled");
+        break;
+      default:
+        RCLCPP_ERROR(this->get_logger(), "control_action unknown result code");
+        break;
+    }
   }
   /**
    * helper methods

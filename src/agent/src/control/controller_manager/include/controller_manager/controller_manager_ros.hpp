@@ -40,8 +40,8 @@ namespace controller
         void p_execute(const std::shared_ptr<GoalHandleControlAction> goal_handle);
         int num_execution = 0;
         bool canExecute();
-        std::thread execution_thread_;
-        std::atomic<bool> stop_flag;
+        rclcpp::TimerBase::SharedPtr execution_timer;
+        void execution_callback();
 
 
         /* Odometry */

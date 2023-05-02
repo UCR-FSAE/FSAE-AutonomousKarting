@@ -20,7 +20,6 @@ namespace controller
     }
 
     RCLCPP_INFO(this->get_logger(), "ControllerManagerNode initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
-    this->stop_flag = true;
 
     // TODO: load config from parameters
     std::map<const std::string, boost::any> dict = {{"key1", 42}, {"key2", std::string("hello")}};
@@ -28,7 +27,10 @@ namespace controller
   }
   ControllerManagerNode ::~ControllerManagerNode()
   {
-    this->stop_flag = true;
+    if (this->execution_timer)
+    {
+      this->execution_timer->cancel();
+    }
   }
 
 
@@ -48,7 +50,8 @@ namespace controller
       std::bind(&ControllerManagerNode::handle_goal, this, std::placeholders::_1,std::placeholders:: _2),
       std::bind(&ControllerManagerNode::handle_cancel, this, std::placeholders::_1),
       std::bind(&ControllerManagerNode::handle_accepted, this, std::placeholders::_1));
-    ackermann_publisher_ = this->create_publisher<ackermann_msgs::msg::AckermannDriveStamped>("/ackermann_drive", 10);
+    ackermann_publisher_ = this->create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(std::string(this->get_namespace()) + "/" + std::string(this->get_name()) + "/" + "output", 10);
+    this->execution_timer = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&ControllerManagerNode::execution_callback, this));
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -101,11 +104,11 @@ namespace controller
 
     if (goal->overwrite_previous && active_goal_ != nullptr)
     {
+        RCLCPP_WARN(this->get_logger(), "OK cool, you used the hacky way. Overwriting previous goal... But please cancel request before sending new ones");
         auto result = std::make_shared<ControlAction::Result>();
         result->status = result->NORMAL;
         active_goal_->abort(result);
         active_goal_ = nullptr; // release the active goal checker
-        stop_flag = true;
         return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
     return rclcpp_action::GoalResponse::REJECT;
@@ -117,67 +120,59 @@ namespace controller
   }
   void ControllerManagerNode::handle_accepted(const std::shared_ptr<GoalHandleControlAction> goal_handle)
   {
+    active_goal_ = goal_handle;
     RCLCPP_DEBUG(get_logger(), "handle_accepted - goal uuid: [%s]", rclcpp_action::to_string(goal_handle->get_goal_id()).c_str());
-    stop_flag = false;
-    std::thread{std::bind(&ControllerManagerNode::p_execute, this, std::placeholders::_1), goal_handle}.detach();
-
+    this->controller->setTrajectory(std::make_shared<nav_msgs::msg::Path>(goal_handle->get_goal()->path));
   }
 
   /**
    * main execution loops
   */
+  void ControllerManagerNode::execution_callback()
+  {
+    if (this->active_goal_)
+    {
+      this->p_execute(active_goal_);
+    }
+    
+  }
+
   void ControllerManagerNode::p_execute(const std::shared_ptr<GoalHandleControlAction> goal_handle)
   {
-      std::lock_guard<std::mutex> lock(active_goal_mutex_);
-      active_goal_ = goal_handle;
-      auto result = std::make_shared<ControlAction::Result>();
-      const nav_msgs::msg::Path::SharedPtr trajectory = std::make_shared<nav_msgs::msg::Path>(goal_handle->get_goal()->path);
-      this->controller->setTrajectory(trajectory);
-      rclcpp::WallRate loop_rate(this->get_parameter("loop_rate").as_double());
+    std::lock_guard<std::mutex> lock(active_goal_mutex_);
+    auto result = std::make_shared<ControlAction::Result>();
+    const nav_msgs::msg::Path::SharedPtr trajectory = std::make_shared<nav_msgs::msg::Path>(goal_handle->get_goal()->path);
 
-      while (!this->stop_flag)
-      {
-        // check if goal is cancel
-        if (goal_handle->is_canceling())
-        {
-            result->status = control_interfaces::action::Control::Result::NORMAL;
-            goal_handle->canceled(result);
-            RCLCPP_DEBUG(get_logger(), "goal canceled");
-            return;
-        }
+    // check if goal is cancel
+    if (goal_handle->is_canceling())
+    {
+        result->status = control_interfaces::action::Control::Result::NORMAL;
+        goal_handle->canceled(result);
+        active_goal_ = nullptr; // release lock 
+        RCLCPP_DEBUG(get_logger(), "goal canceled");
+        return;
+    }
 
-        if (this->latest_odom == nullptr)
-        {
-            loop_rate.sleep();
-            continue;
-        }
+    // check if trajectory is done
+    if (this->isDone(trajectory, this->latest_odom, this->closeness_threshold))
+    {
+      result->status = control_interfaces::action::Control::Result::NORMAL;
+      goal_handle->succeed(result);
+      active_goal_ = nullptr; // release lock 
+      RCLCPP_DEBUG(get_logger(), "goal reached");
+      return;
+    }
 
-        // check if trajectory is done
-        if (this->isDone(trajectory, this->latest_odom, this->closeness_threshold))
-        {
-          result->status = control_interfaces::action::Control::Result::NORMAL;
-          goal_handle->succeed(result);
-          active_goal_ = nullptr; // release lock so that next iteration can execute
-          RCLCPP_DEBUG(get_logger(), "goal reached");
-          return;
-        }
+    // if not done, run controller
+    ControlResult controlResult = this->controller->compute(this->latest_odom, this->odom_mutex_, {});
 
-        // if not done, run controller
-        ControlResult controlResult = this->controller->compute(this->latest_odom, this->odom_mutex_, {});
-        auto feedback = std::make_shared<ControlAction::Feedback>();
-        feedback->curr_index = controlResult.waypoint_index; 
-        // feedback.
-        goal_handle->publish_feedback(feedback);
+    // publish control cmd
+    ackermann_msgs::msg::AckermannDriveStamped ackermannStamped = this->p_controlResultToAckermannStamped(controlResult);
+    this->ackermann_publisher_->publish(ackermannStamped);
 
-        // publish control cmd
-        ackermann_msgs::msg::AckermannDriveStamped ackermannStamped = this->p_controlResultToAckermannStamped(controlResult);
-        this->ackermann_publisher_->publish(ackermannStamped);
-
-        loop_rate.sleep();
-      }
-      result->status = -1;
-      goal_handle->canceled(result);
-      RCLCPP_DEBUG(get_logger(), "execution loop exited abnormally");
+    auto feedback = std::make_shared<ControlAction::Feedback>();
+    feedback->curr_index = controlResult.waypoint_index; 
+    goal_handle->publish_feedback(feedback);
   }
 
 
@@ -210,9 +205,11 @@ namespace controller
   {
     ackermann_msgs::msg::AckermannDriveStamped ackermannDriveStamped;
     ackermannDriveStamped.drive = controlResult.drive;
-    ackermannDriveStamped.header.stamp = this->now();
+    ackermannDriveStamped.header.stamp = this->get_clock()->now();
     ackermannDriveStamped.header.frame_id = this->frame_id;
     return ackermannDriveStamped;
   }
 
 }
+
+
