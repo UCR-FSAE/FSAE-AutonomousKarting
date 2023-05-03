@@ -70,7 +70,9 @@ namespace controller
         /**
          * control algorithm registry
         */
-       std::shared_ptr<ControllerInterface> controller; 
+       
+       std::shared_ptr<controller::ControllerInterface> controller; 
+
 
         /**
          * Helper functions

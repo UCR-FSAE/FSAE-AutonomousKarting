@@ -21,6 +21,7 @@ find_package(trajectory_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(control_interfaces REQUIRED)
 find_package(ackermann_msgs REQUIRED)
+find_package(control_toolbox REQUIRED)
 
 include_directories(
   include
@@ -40,6 +41,7 @@ set(dependencies
   nav2_core
   control_interfaces
   ackermann_msgs
+  control_toolbox
 )
 
 ament_target_dependencies(controller_manager_core

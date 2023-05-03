@@ -274,7 +274,7 @@ namespace local_planning
     goal_msg.target_spd = target_spd;
     goal_msg.overwrite_previous = true;
 
-    RCLCPP_INFO(this->get_logger(), "Executing local path - len(path)=[%d] | target_spd=[%f]",path->poses.size() ,target_spd);
+    // RCLCPP_INFO(this->get_logger(), "Executing local path - len(path)=[%d] | target_spd=[%f]",path->poses.size() ,target_spd);
 
     auto send_goal_options = rclcpp_action::Client<ControlAction>::SendGoalOptions();
     send_goal_options.goal_response_callback = std::bind(&LocalPlannerManagerNode::control_action_goal_response_callback, this, _1);

@@ -67,9 +67,9 @@ namespace gokart_planner
   nav2_util::CallbackReturn
   GlobalPlannerManager::on_activate(const rclcpp_lifecycle::State &state)
   {
-    RCLCPP_DEBUG(get_logger(), "Activating");
-    this->next_waypoint_visualization_publisher_->on_activate();
+    RCLCPP_INFO(get_logger(), "Activating");
     this->next_waypoint_publisher_->on_activate();
+    this->next_waypoint_visualization_publisher_->on_activate();
     this->global_path_publisher_->on_activate();
     return nav2_util::CallbackReturn::SUCCESS;
   }

@@ -24,7 +24,8 @@
   <depend>visualization_msgs</depend>
   <depend>control_interfaces </depend>
   <depend>ackermann_msgs</depend>
-
+  <depend>rapidjson</depend>
+  <depend>control_toolbox </depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

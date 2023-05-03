@@ -59,6 +59,8 @@ namespace controller
   {
     RCLCPP_DEBUG(get_logger(), "on_activate");
     this->ackermann_publisher_->on_activate();
+    RCLCPP_DEBUG(get_logger(), "activated");
+
 
     return nav2_util::CallbackReturn::SUCCESS;
   }
@@ -66,7 +68,6 @@ namespace controller
   {
     RCLCPP_DEBUG(get_logger(), "on_deactivate");
     this->ackermann_publisher_->on_deactivate();
-
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn ControllerManagerNode::on_cleanup(const rclcpp_lifecycle::State &state) 
@@ -96,23 +97,24 @@ namespace controller
   {
     RCLCPP_DEBUG(get_logger(), "received goal - goal uuid: [%s]", rclcpp_action::to_string(uuid).c_str());
 
-    
     if (this->canExecute(goal))
     {
       return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
     }
     return rclcpp_action::GoalResponse::REJECT;
   }
+
   rclcpp_action::CancelResponse ControllerManagerNode::handle_cancel(const std::shared_ptr<GoalHandleControlAction> goal_handle)
   {
     RCLCPP_DEBUG(get_logger(), "handle_cancel - goal uuid: [%s]", rclcpp_action::to_string(goal_handle->get_goal_id()).c_str());
     return rclcpp_action::CancelResponse::ACCEPT;
   }
+
   void ControllerManagerNode::handle_accepted(const std::shared_ptr<GoalHandleControlAction> goal_handle)
   {
     active_goal_ = goal_handle;
     RCLCPP_DEBUG(get_logger(), "handle_accepted - goal uuid: [%s]", rclcpp_action::to_string(goal_handle->get_goal_id()).c_str());
-    this->controller->setTrajectory(std::make_shared<nav_msgs::msg::Path>(goal_handle->get_goal()->path));
+    this->controller->setTarget(std::make_shared<nav_msgs::msg::Path>(goal_handle->get_goal()->path), 10); // TODO: pass in target speed here
   }
 
   /**
@@ -152,7 +154,7 @@ namespace controller
       RCLCPP_DEBUG(get_logger(), "goal reached");
       return;
     }
-
+    RCLCPP_DEBUG(get_logger(), "running");
     // if not done, run controller
     ControlResult controlResult = this->controller->compute(this->latest_odom, this->odom_mutex_, {});
 
@@ -164,9 +166,6 @@ namespace controller
     feedback->curr_index = controlResult.waypoint_index; 
     goal_handle->publish_feedback(feedback);
   }
-
-
-
 
   bool ControllerManagerNode::canExecute(const std::shared_ptr<const ControlAction::Goal> goal)
   {
@@ -198,6 +197,9 @@ namespace controller
         RCLCPP_ERROR(get_logger(), "Unable to match control algorithm");
         break;
     }
+    RCLCPP_INFO(get_logger(), "configuring...");
+    std::map<std::string, boost::any> empty_map;
+    this->controller->configure(empty_map, this);
   }
 
   ackermann_msgs::msg::AckermannDriveStamped ControllerManagerNode::p_controlResultToAckermannStamped(ControlResult controlResult)
