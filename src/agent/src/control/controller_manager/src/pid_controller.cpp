@@ -6,7 +6,7 @@
 
 namespace controller 
 {
-    void PIDController::configure(const std::map<std::string, boost::any> configuration, rclcpp_lifecycle::LifecycleNode *parent)
+    bool PIDController::configure(const std::map<std::string, boost::any> configuration, rclcpp_lifecycle::LifecycleNode *parent)
     {
         this->parent = parent;
 
@@ -18,15 +18,23 @@ namespace controller
 
         longitudinal_pid = std::shared_ptr<control_toolbox::PidROS>(new control_toolbox::PidROS(this->longitudinal_pid_node_, "longitudinal_pid_controller"));
         lateral_pid = std::shared_ptr<control_toolbox::PidROS>(new control_toolbox::PidROS(this->lateral_pid_node_, "lateral_pid_controller"));
-
-        // TODO: read config from file
+        
+        // TODO: this should be passed in from config dictionary
+        bool pid_read_status = this->pReadPidFromFile("/home/michael/Desktop/projects/roar-gokart-ws/src/agent/src/control/controller_manager/params/carla_pid.json");
+        if (!pid_read_status)
+        {
+            RCLCPP_ERROR(this->parent->get_logger(), "Error reading pid configuration");
+            return false;
+        }
+        return true;
     }
 
-    void PIDController::setTarget(const nav_msgs::msg::Path::SharedPtr trajectory, const float targetSpeed)
+    void PIDController::setTarget(const nav_msgs::msg::Path::SharedPtr trajectory, const float target_speed)
     {
         this->trajectory = trajectory;
-        this->target_speed = target_speed;
+        this->targetSpeed = target_speed;
         pid_last_calc_timestamp = this->parent->get_clock()->now();
+        RCLCPP_INFO(rclcpp::get_logger("pid_controller"), "Target speed: [%.3f]", this->targetSpeed);
     }
 
     ControlResult 
@@ -42,7 +50,7 @@ namespace controller
         int next_waypoint_index = this->p_findNextWaypoint(this->trajectory, odom);
 
         // run pid controller 
-        float throttle_error = this->p_calculateThrottleError(odom, this->target_speed);
+        float throttle_error = this->p_calculateThrottleError(odom, this->targetSpeed);
         float steering_error = this->p_calculateSteeringError(odom, this->trajectory->poses[next_waypoint_index]);
 
         float current_spd = this->p_SpeedFromOdom(odom);
@@ -53,10 +61,12 @@ namespace controller
                                       std::min(MAX_RIGHT_STEERING_ANGLE, 
                                       float(this->lateral_pid->computeCommand(steering_error, dt))));
         
-        RCLCPP_INFO(rclcpp::get_logger("pid_controller"), "lateral pid:");
+        RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "spd: %.3f | steering_error: %3f | steering cmd: %3f | lateral pid:", current_spd, steering_error, steering_cmd);
         this->printGains(this->lateral_pid->getGains());
-        RCLCPP_INFO(rclcpp::get_logger("pid_controller"), "longitudinal pid:");
-        this->printGains(this->lateral_pid->getGains());
+        // RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "target spd: %.3f | spd: %.3f | longitudinal cmd: [%.3f] | pid:", this->targetSpeed, current_spd, throttle_cmd);
+        // this->printGains(this->longitudinal_pid->getGains());
+        RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "------------");
+
         // output cmd 
         msg.jerk = throttle_cmd;
         msg.steering_angle = steering_cmd;
@@ -112,11 +122,11 @@ namespace controller
 
     void PIDController::p_updateLongAndLatPID(float spd)
     {
-        // control_toolbox::Pid::Gains long_gains = this->pGainsFromSpeed(spd, this->longitudinal_pid_configs);
-        // control_toolbox::Pid::Gains lat_gains = this->pGainsFromSpeed(spd, this->lateral_pid_configs);
+        control_toolbox::Pid::Gains long_gains = this->p_GainsFromSpeed(spd, this->longitudinal_pid_configs);
+        control_toolbox::Pid::Gains lat_gains = this->p_GainsFromSpeed(spd, this->lateral_pid_configs);
 
-        // longitudinal_pid->setGains(long_gains);
-        // lateral_pid->setGains(lat_gains);
+        longitudinal_pid->setGains(long_gains);
+        lateral_pid->setGains(lat_gains);
     }
 
     control_toolbox::Pid::Gains PIDController::p_GainsFromSpeed(float spd, std::map<float, control_toolbox::Pid::Gains> *configs)
@@ -140,6 +150,141 @@ namespace controller
         }
         return gains;
     }
+
+
+
+    /**
+     * Reading from PID config file
+    */
+    bool
+    PIDController::pReadPidFromFile(const std::string pid_config_file_path)
+    {
+        RCLCPP_INFO(rclcpp::get_logger("pid_controller"), "Loading PID configuration from: [%s]", pid_config_file_path.c_str());
+
+        std::ifstream file(pid_config_file_path);
+        if (!file.is_open())
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("pid_controller"), "Unable to open file %s", pid_config_file_path.c_str());
+            std::cerr << "Failed to open file." << std::endl;
+            return false;
+        }
+
+        // Parse the JSON data from the file
+        rapidjson::IStreamWrapper isw(file);
+        rapidjson::Document doc;
+        doc.ParseStream(isw);
+        if (doc.HasMember("longitudinal_controller"))
+        {
+            const rapidjson::Value &configs = doc["longitudinal_controller"];
+            bool status = this->pLoadConfigs(configs, this->longitudinal_pid_configs);
+            RCLCPP_INFO(rclcpp::get_logger("pid_controller"), "Longitudinal PIDs:");
+
+            this->pPrettyPrintMap(this->longitudinal_pid_configs);
+            if (!status)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("pid_controller"), "JSON does not container key [longitudinal_controller]");
+            return false;
+        }
+
+        if (doc.HasMember("latitudinal_controller"))
+        {
+            const rapidjson::Value &configs = doc["latitudinal_controller"];
+            bool status = this->pLoadConfigs(configs, this->lateral_pid_configs);
+            RCLCPP_INFO(rclcpp::get_logger("pid_controller"), "Lateral PIDs:");
+
+            this->pPrettyPrintMap(this->lateral_pid_configs);
+            if (!status)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            RCLCPP_ERROR(rclcpp::get_logger("pid_controller"), "JSON does not container key [latitudinal_controller]");
+            return false;
+        }
+        return true;
+    }
+
+    bool 
+    PIDController::pLoadConfigs(const rapidjson::Value &config, std::map<float, control_toolbox::Pid::Gains> *configs)
+    {
+        if (!config.IsObject())
+        {
+            return false;
+        }
+
+        for (auto itr = config.MemberBegin(); itr != config.MemberEnd(); ++itr)
+        {
+            std::string key = itr->name.GetString();
+            float f = std::stof(key);
+
+            const rapidjson::Value &pid_config = itr->value;
+            (*configs)[f] = this->pConvertJsonToPid(pid_config);
+        }
+
+        return true;
+    }
+
+    control_toolbox::Pid::Gains
+    PIDController::pConvertJsonToPid(const rapidjson::Value &config)
+    {
+        control_toolbox::Pid::Gains gains(0, 0, 0, 0, 0, false);
+        if (!config.IsObject())
+        {
+            return gains;
+        }
+        if (config.HasMember("k_p") && config["k_p"].IsNumber())
+        {
+            gains.p_gain_ = config["k_p"].GetFloat();
+        }
+        if (config.HasMember("k_i") && config["k_i"].IsNumber())
+        {
+            gains.i_gain_ = config["k_i"].GetFloat();
+        }
+        if (config.HasMember("k_d") && config["k_d"].IsNumber())
+        {
+            gains.d_gain_ = config["k_d"].GetFloat();
+        }
+        if (config.HasMember("i_clamp_min") && config["i_clamp_min"].IsNumber())
+        {
+            gains.i_min_ = config["i_clamp_min"].GetFloat();
+        }
+        if (config.HasMember("i_clamp_max") && config["i_clamp_max"].IsNumber())
+        {
+            gains.i_max_ = config["i_clamp_max"].GetFloat();
+        }
+        if (config.HasMember("antiwindup") && config["antiwindup"].IsBool())
+        {
+            gains.antiwindup_ = config["antiwindup"].GetBool();
+        }
+        return gains;
+    }
+
+    void 
+    PIDController::pPrettyPrintMap(const std::map<float, control_toolbox::Pid::Gains> *configs)
+    {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(2); // set precision to 2 decimal places
+        oss << "\n";
+        for (const auto &pair : *configs)
+        {
+            oss << "  Below " << pair.first << " m/s"
+                << ": { p: " << pair.second.p_gain_
+                << ", i: " << pair.second.i_gain_
+                << ", d: " << pair.second.d_gain_
+                << ", i_min_: " << pair.second.i_min_
+                << ", i_max_: " << pair.second.i_max_
+                << " }\n";
+        }
+        RCLCPP_INFO(rclcpp::get_logger("pid_controller"), oss.str());
+    }
+
 
 
 } // controller

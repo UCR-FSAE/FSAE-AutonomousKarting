@@ -1,6 +1,11 @@
 #include "controller_manager/controller_interface.hpp"
 #include <control_toolbox/pid_ros.hpp>
 #include <rclcpp/clock.hpp>
+#include <iostream>
+#include <fstream>
+#include <iomanip> // for std::setprecision
+#include "rapidjson/document.h"
+#include "rapidjson/istreamwrapper.h"
 
 namespace controller 
 {
@@ -11,14 +16,14 @@ namespace controller
             static constexpr float DEFAULT_K_D = 0.0f;
             static constexpr float DEFAULT_K_I = 0.0f;
             
-            void configure(const std::map<std::string, boost::any> configuration, rclcpp_lifecycle::LifecycleNode *parent);
-            void setTarget(const nav_msgs::msg::Path::SharedPtr trajectory, const float targetSpeed)  override;
+            bool configure(const std::map<std::string, boost::any> configuration, rclcpp_lifecycle::LifecycleNode *parent);
+            void setTarget(const nav_msgs::msg::Path::SharedPtr trajectory, const float target_speed)  override;
             ControlResult compute(const nav_msgs::msg::Odometry::SharedPtr odom, 
                                 std::mutex& odom_mutex,
                                 const std::map<const std::string, boost::any> extra) override;
         private:
             std::shared_ptr<nav_msgs::msg::Path> trajectory;
-            float target_speed = 1.0;
+            float targetSpeed = 1.0;
             float MAX_RIGHT_STEERING_ANGLE = 1.0;
             float MAX_LEFT_STEERING_ANGLE = -1.0;
             rclcpp::Time pid_last_calc_timestamp;
@@ -46,8 +51,14 @@ namespace controller
             void
             printGains(const control_toolbox::Pid::Gains &gains)
             {
-                RCLCPP_INFO(rclcpp::get_logger("pid_controller"), "Gains: P=%.2f, I=%.2f, D=%.2f, i_max=%.2f, i_min=%.2f, antiwindup=%d",
+                RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "Gains: P=%.2f, I=%.2f, D=%.2f, i_max=%.2f, i_min=%.2f, antiwindup=%d",
                             gains.p_gain_, gains.i_gain_, gains.d_gain_, gains.i_max_, gains.i_min_, gains.antiwindup_);
             }
+
+            bool pReadPidFromFile(const std::string pid_config_file_path);
+            bool pLoadConfigs(const rapidjson::Value &config, std::map<float, control_toolbox::Pid::Gains> *configs);
+            void pPrettyPrintMap(const std::map<float, control_toolbox::Pid::Gains> *configs);
+            control_toolbox::Pid::Gains pConvertJsonToPid(const rapidjson::Value &config);
+
     };
 }

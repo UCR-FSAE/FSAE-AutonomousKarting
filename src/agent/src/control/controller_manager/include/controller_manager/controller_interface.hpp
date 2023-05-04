@@ -20,8 +20,8 @@ namespace controller
     class ControllerInterface
     {
         public: 
-            virtual void configure(const std::map<std::string, boost::any> configuration, rclcpp_lifecycle::LifecycleNode *parent) = 0;
-            virtual void setTarget(const nav_msgs::msg::Path::SharedPtr trajectory, const float targetSpeed) = 0;
+            virtual bool configure(const std::map<std::string, boost::any> configuration, rclcpp_lifecycle::LifecycleNode *parent) = 0;
+            virtual void setTarget(const nav_msgs::msg::Path::SharedPtr trajectory, const float target_speed) = 0;
             virtual ControlResult compute(const nav_msgs::msg::Odometry::SharedPtr odom,
                                         std::mutex& odom_mutex,
                                         const std::map<const std::string, boost::any> extra) = 0;

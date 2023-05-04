@@ -16,14 +16,12 @@ namespace controller
     
     if (this->get_parameter("debug").as_bool())
     {
-        auto ret = rcutils_logging_set_logger_level(get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
+        // rcutils_logging_set_logger_level(get_logger().get_name(), RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
+        rcutils_logging_set_logger_level("pid_controller", RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
+        
     }
 
     RCLCPP_INFO(this->get_logger(), "ControllerManagerNode initialized with Debug Mode = [%s]", this->get_parameter("debug").as_bool() ? "YES" : "NO");
-
-    // TODO: load config from parameters
-    std::map<const std::string, boost::any> dict = {{"key1", 42}, {"key2", std::string("hello")}};
-    this->registerControlAlgorithm(PID, dict); 
   }
   ControllerManagerNode ::~ControllerManagerNode()
   {
@@ -53,6 +51,14 @@ namespace controller
     ackermann_publisher_ = this->create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(std::string(this->get_namespace()) + "/" + std::string(this->get_name()) + "/" + "output", 10);
     this->execution_timer = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&ControllerManagerNode::execution_callback, this));
 
+
+    // TODO: load config from parameters
+    std::map<const std::string, boost::any> dict = {{"key1", 42}, {"key2", std::string("hello")}};
+    
+    registerControlAlgorithm(PID, dict);
+    // if (status == false) {
+    //     return nav2_util::CallbackReturn::FAILURE;
+    // }
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn ControllerManagerNode::on_activate(const rclcpp_lifecycle::State &state) 
@@ -154,7 +160,6 @@ namespace controller
       RCLCPP_DEBUG(get_logger(), "goal reached");
       return;
     }
-    RCLCPP_DEBUG(get_logger(), "running");
     // if not done, run controller
     ControlResult controlResult = this->controller->compute(this->latest_odom, this->odom_mutex_, {});
 
@@ -186,6 +191,8 @@ namespace controller
     }
     return true;
   }
+
+
   void ControllerManagerNode::registerControlAlgorithm(const Algorithms algo, const std::map<const std::string, boost::any> configs)
   {
     switch (algo)
@@ -195,7 +202,7 @@ namespace controller
         break;
       default:
         RCLCPP_ERROR(get_logger(), "Unable to match control algorithm");
-        break;
+        return;
     }
     RCLCPP_INFO(get_logger(), "configuring...");
     std::map<std::string, boost::any> empty_map;
@@ -210,7 +217,4 @@ namespace controller
     ackermannDriveStamped.header.frame_id = this->frame_id;
     return ackermannDriveStamped;
   }
-
 }
-
-
