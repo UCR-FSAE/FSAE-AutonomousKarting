@@ -25,7 +25,7 @@ namespace controller
             ControllerManagerNode();
             ~ControllerManagerNode();
 
-            void registerControlAlgorithm(const Algorithms algo, const std::map<const std::string, boost::any> configs);
+            void registerControlAlgorithm(const Algorithms algo, const std::map<std::string, boost::any> configs);
 
 
     protected:
@@ -79,7 +79,16 @@ namespace controller
         */
         ackermann_msgs::msg::AckermannDriveStamped p_controlResultToAckermannStamped(ControlResult controlResult);
 
-
+        Algorithms p_algorithmChooser(const std::string input)
+        {
+            if (input == "PID")
+            {
+                return PID;
+            }
+            // TODO: add more algorithms here
+            return PID;
+            
+        }
 
         /**
          * check if is close enough to the last index of the trajectory

@@ -18,12 +18,14 @@ namespace controller
 
         longitudinal_pid = std::shared_ptr<control_toolbox::PidROS>(new control_toolbox::PidROS(this->longitudinal_pid_node_, "longitudinal_pid_controller"));
         lateral_pid = std::shared_ptr<control_toolbox::PidROS>(new control_toolbox::PidROS(this->lateral_pid_node_, "lateral_pid_controller"));
-        
-        // TODO: this should be passed in from config dictionary
-        bool pid_read_status = this->pReadPidFromFile("/home/michael/Desktop/projects/roar-gokart-ws/src/agent/src/control/controller_manager/params/carla_pid.json");
-        if (!pid_read_status)
-        {
-            RCLCPP_ERROR(this->parent->get_logger(), "Error reading pid configuration");
+
+        auto it = configuration.find("pid_config_file_path");
+        if (it != configuration.end()) {
+            // Key is found in the map, extract the value using boost::any_cast
+            std::string pidConfigFilePath = boost::any_cast<std::string>(it->second);
+            bool pid_read_status = this->pReadPidFromFile(pidConfigFilePath);
+        } else {
+            // Key is not found in the map, handle the error...
             return false;
         }
 
@@ -75,10 +77,8 @@ namespace controller
         this->p_printPose(std::make_shared<geometry_msgs::msg::Pose>(this->trajectory->poses[0].pose));
         RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "spd: %.3f | steering_error: %3f | steering cmd: %3f | lateral pid:", current_spd, steering_error, steering_cmd);
         this->printGains(this->lateral_pid->getGains());
-        // RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "target spd: %.3f | spd: %.3f | longitudinal cmd: [%.3f] | pid:", this->targetSpeed, current_spd, throttle_cmd);
-        // this->printGains(this->longitudinal_pid->getGains());
-
-        RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "------------");
+        RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "target spd: %.3f | spd: %.3f | longitudinal cmd: [%.3f] | pid:", this->targetSpeed, current_spd, throttle_cmd);
+        this->printGains(this->longitudinal_pid->getGains());
 
         // output cmd 
         msg.jerk = throttle_cmd;

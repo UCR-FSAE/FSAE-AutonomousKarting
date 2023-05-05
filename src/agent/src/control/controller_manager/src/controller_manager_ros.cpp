@@ -11,6 +11,8 @@ namespace controller
     this->declare_parameter("debug", false);
     this->declare_parameter("frame_id", "ego_vehicle");
     this->declare_parameter("loop_rate", 10.0);
+    this->declare_parameter("pid_config_file_path");
+    this->declare_parameter("algorithm", "PID");
 
     this->frame_id = this->get_parameter("frame_id").as_string();
     
@@ -51,14 +53,12 @@ namespace controller
     ackermann_publisher_ = this->create_publisher<ackermann_msgs::msg::AckermannDriveStamped>(std::string(this->get_namespace()) + "/" + std::string(this->get_name()) + "/" + "output", 10);
     this->execution_timer = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&ControllerManagerNode::execution_callback, this));
 
+    std::map<std::string, boost::any> configs;
+    configs.insert(std::make_pair("pid_config_file_path", this->get_parameter("pid_config_file_path").as_string()));
+    std::string algo = this->get_parameter("algorithm").as_string();
+    RCLCPP_INFO(get_logger(), "Using algorithm: [%s]", algo.c_str());
+    this->registerControlAlgorithm(this->p_algorithmChooser(algo), configs);
 
-    // TODO: load config from parameters
-    std::map<const std::string, boost::any> dict = {{"key1", 42}, {"key2", std::string("hello")}};
-    
-    registerControlAlgorithm(PID, dict);
-    // if (status == false) {
-    //     return nav2_util::CallbackReturn::FAILURE;
-    // }
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn ControllerManagerNode::on_activate(const rclcpp_lifecycle::State &state) 
@@ -193,7 +193,7 @@ namespace controller
   }
 
 
-  void ControllerManagerNode::registerControlAlgorithm(const Algorithms algo, const std::map<const std::string, boost::any> configs)
+  void ControllerManagerNode::registerControlAlgorithm(const Algorithms algo, const std::map<std::string, boost::any> configs)
   {
     switch (algo)
     {
@@ -205,8 +205,7 @@ namespace controller
         return;
     }
     RCLCPP_INFO(get_logger(), "configuring...");
-    std::map<std::string, boost::any> empty_map;
-    this->controller->configure(empty_map, this);
+    this->controller->configure(configs, this);
   }
 
   ackermann_msgs::msg::AckermannDriveStamped ControllerManagerNode::p_controlResultToAckermannStamped(ControlResult controlResult)
