@@ -6,6 +6,7 @@
 #include <iomanip> // for std::setprecision
 #include "rapidjson/document.h"
 #include "rapidjson/istreamwrapper.h"
+#include <tf2_ros/transform_listener.h>
 
 namespace controller 
 {
@@ -37,9 +38,12 @@ namespace controller
             std::map<float, control_toolbox::Pid::Gains> *longitudinal_pid_configs;
             std::map<float, control_toolbox::Pid::Gains> *lateral_pid_configs;
 
+            
+            std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+            std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
 
             float p_calculateThrottleError(nav_msgs::msg::Odometry::SharedPtr odom, float target_spd);
-            float p_calculateSteeringError(nav_msgs::msg::Odometry::SharedPtr odom, geometry_msgs::msg::PoseStamped next_waypoint);
+            float p_calculateSteeringError(nav_msgs::msg::Odometry::SharedPtr odom, geometry_msgs::msg::Pose::SharedPtr next_waypoint);
             double p_yawFromOdom(nav_msgs::msg::Odometry::SharedPtr odom);
             float p_SpeedFromOdom(nav_msgs::msg::Odometry::SharedPtr odom);
             int p_findNextWaypoint(const std::shared_ptr<nav_msgs::msg::Path>, const std::shared_ptr<nav_msgs::msg::Odometry> odom);
@@ -59,6 +63,18 @@ namespace controller
             bool pLoadConfigs(const rapidjson::Value &config, std::map<float, control_toolbox::Pid::Gains> *configs);
             void pPrettyPrintMap(const std::map<float, control_toolbox::Pid::Gains> *configs);
             control_toolbox::Pid::Gains pConvertJsonToPid(const rapidjson::Value &config);
+            void p_printOdom(const nav_msgs::msg::Odometry::SharedPtr odom)
+            {
+                RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "Odom: Position: x=%f, y=%f, z=%f | yaw=%f",
+                 odom->pose.pose.position.x, odom->pose.pose.position.y, odom->pose.pose.position.z, p_yawFromOdom(odom));
+            }
+            void p_printPose(const geometry_msgs::msg::Pose::SharedPtr pose)
+            {
+                RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "Pose: Position: x=%f, y=%f, z=%f",
+                 pose->position.x, pose->position.y, pose->position.z);
+            }
+
+        geometry_msgs::msg::Pose::SharedPtr pConvertToEgoFov(geometry_msgs::msg::Pose original, nav_msgs::msg::Odometry::SharedPtr latest_odom);
 
     };
 }

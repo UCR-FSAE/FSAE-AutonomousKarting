@@ -26,6 +26,11 @@ namespace controller
             RCLCPP_ERROR(this->parent->get_logger(), "Error reading pid configuration");
             return false;
         }
+
+        tf_buffer_ =
+            std::make_unique<tf2_ros::Buffer>(this->parent->get_clock());
+        tf_listener_ =
+            std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
         return true;
     }
 
@@ -34,7 +39,7 @@ namespace controller
         this->trajectory = trajectory;
         this->targetSpeed = target_speed;
         pid_last_calc_timestamp = this->parent->get_clock()->now();
-        RCLCPP_INFO(rclcpp::get_logger("pid_controller"), "Target speed: [%.3f]", this->targetSpeed);
+        // RCLCPP_INFO(rclcpp::get_logger("pid_controller"), "Target speed: [%.3f]", this->targetSpeed);
     }
 
     ControlResult 
@@ -49,9 +54,15 @@ namespace controller
         // find the next waypoint
         int next_waypoint_index = this->p_findNextWaypoint(this->trajectory, odom);
 
+        geometry_msgs::msg::Pose::SharedPtr next_waypoint_ego_fov = this->pConvertToEgoFov(this->trajectory->poses[next_waypoint_index].pose, odom);
+        if (next_waypoint_ego_fov == nullptr){
+            RCLCPP_ERROR(rclcpp::get_logger("pid_controller"), "unable to get transform");
+            return result;
+        }
+
         // run pid controller 
         float throttle_error = this->p_calculateThrottleError(odom, this->targetSpeed);
-        float steering_error = this->p_calculateSteeringError(odom, this->trajectory->poses[next_waypoint_index]);
+        float steering_error = this->p_calculateSteeringError(odom, next_waypoint_ego_fov);
 
         float current_spd = this->p_SpeedFromOdom(odom);
         this->p_updateLongAndLatPID(current_spd);
@@ -60,16 +71,21 @@ namespace controller
         float steering_cmd = std::max(MAX_LEFT_STEERING_ANGLE, 
                                       std::min(MAX_RIGHT_STEERING_ANGLE, 
                                       float(this->lateral_pid->computeCommand(steering_error, dt))));
-        
+        this->p_printOdom(odom);
+        this->p_printPose(std::make_shared<geometry_msgs::msg::Pose>(this->trajectory->poses[0].pose));
         RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "spd: %.3f | steering_error: %3f | steering cmd: %3f | lateral pid:", current_spd, steering_error, steering_cmd);
         this->printGains(this->lateral_pid->getGains());
         // RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "target spd: %.3f | spd: %.3f | longitudinal cmd: [%.3f] | pid:", this->targetSpeed, current_spd, throttle_cmd);
         // this->printGains(this->longitudinal_pid->getGains());
+
         RCLCPP_DEBUG(rclcpp::get_logger("pid_controller"), "------------");
 
         // output cmd 
         msg.jerk = throttle_cmd;
+
         msg.steering_angle = steering_cmd;
+        msg.steering_angle_velocity = std::max(MAX_LEFT_STEERING_ANGLE, std::min(MAX_RIGHT_STEERING_ANGLE, steering_cmd));
+
         result.drive = msg;
         result.waypoint_index = next_waypoint_index;
 
@@ -84,13 +100,14 @@ namespace controller
         return target_spd - current_spd;
     }
 
-    float PIDController::p_calculateSteeringError(nav_msgs::msg::Odometry::SharedPtr odom, geometry_msgs::msg::PoseStamped next_waypoint)
+    float PIDController::p_calculateSteeringError(nav_msgs::msg::Odometry::SharedPtr odom, 
+                                                  geometry_msgs::msg::Pose::SharedPtr next_waypoint)
     {
-        float tx = next_waypoint.pose.position.x;
-        float ty = next_waypoint.pose.position.y;
+        float tx = next_waypoint->position.x;
+        float ty = next_waypoint->position.y;
         float desired_yaw = -1 * std::atan2(ty, tx);
 
-        float steering_error = desired_yaw; // after mathmatical deduction, steering error = desired yaw
+        float steering_error = desired_yaw;
         return steering_error;
     }
 
@@ -150,8 +167,6 @@ namespace controller
         }
         return gains;
     }
-
-
 
     /**
      * Reading from PID config file
@@ -283,6 +298,33 @@ namespace controller
                 << " }\n";
         }
         RCLCPP_INFO(rclcpp::get_logger("pid_controller"), oss.str());
+    }
+
+    geometry_msgs::msg::Pose::SharedPtr PIDController::pConvertToEgoFov(geometry_msgs::msg::Pose original, nav_msgs::msg::Odometry::SharedPtr latest_odom)
+    {
+        geometry_msgs::msg::TransformStamped t;
+        std::string fromFrameRel = latest_odom->header.frame_id;
+        std::string toFrameRel = latest_odom->child_frame_id;
+        try
+        {
+          t = tf_buffer_->lookupTransform(toFrameRel, fromFrameRel, tf2::TimePointZero);
+        }
+        catch (const tf2::TransformException &ex)
+        {
+          RCLCPP_INFO(
+              rclcpp::get_logger("pid_controller"), "Could not transform %s to %s: %s",
+              toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+          return nullptr;
+        }
+        std_msgs::msg::Header header;
+        header.frame_id = toFrameRel;
+        header.stamp = this->parent->get_clock()->now();
+        geometry_msgs::msg::PoseStamped child_pose;
+        geometry_msgs::msg::PoseStamped ps;
+        ps.header = header;
+        ps.pose = original;
+        tf2::doTransform(ps, child_pose, t);
+        return std::make_shared<geometry_msgs::msg::Pose>(child_pose.pose);
     }
 
 
