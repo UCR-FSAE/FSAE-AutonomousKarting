@@ -11,3 +11,9 @@ waypoint_recorder_node:
   ros__parameters:
     odom_topic: "/carla/ego_vehicle/odometry"
     record_interval: 1.0
+
+lifecycle_manager_global_planning:
+  ros__parameters:
+    autostart: true
+    use_sim_time: true
+    node_names: ["/global_planner_manager"]

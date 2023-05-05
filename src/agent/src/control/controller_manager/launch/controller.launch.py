@@ -12,28 +12,31 @@ from pathlib import Path
 
 def generate_launch_description():
     ld = launch.LaunchDescription()
-    base_path = Path(get_package_share_directory("local_planner_manager"))
+    base_path = Path(get_package_share_directory("controller_manager"))
 
     config_file = base_path / "params" / "configs.yaml"
     assert config_file.exists()
-    local_planner_manager_node = Node(
-        name="local_planner_manager",
-        executable="local_planner_manager_node",
-        package="local_planner_manager",
-        parameters=[config_file.as_posix()],
+    controller_manager = Node(
+        name="manager",
+        executable="controller_manager",
+        package="controller_manager",
+        parameters=[
+                    config_file.as_posix(),
+                    {"pid_config_file_path": (base_path / "params" / "carla_pid.json").as_posix()}
+                    ],
         emulate_tty=True,
     )
 
     lifecycle_manager = Node(
         package="nav2_lifecycle_manager",
         executable="lifecycle_manager",
-        name="lifecycle_manager_local_planning",
+        name="lifecycle_manager_controller",
         output="screen",
         parameters=[config_file.as_posix()],
     )
 
     # node
-    ld.add_action(local_planner_manager_node)
+    ld.add_action(controller_manager)
     ld.add_action(lifecycle_manager)
 
     return ld

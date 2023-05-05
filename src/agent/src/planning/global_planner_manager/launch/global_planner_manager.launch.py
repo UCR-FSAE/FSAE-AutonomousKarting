@@ -16,9 +16,7 @@ from launch.actions import DeclareLaunchArgument
 def generate_launch_description():
     base_path = Path(get_package_share_directory("global_planner_manager"))
 
-    config_file = (
-        base_path / "config" / "configs.yaml"
-    )
+    config_file = base_path / "config" / "configs.yaml"
     assert config_file.exists(), f"[{config_file}] does not exist"
 
     ld = launch.LaunchDescription()
@@ -51,20 +49,26 @@ def generate_launch_description():
         package="global_planner_manager",
         parameters=[
             config_file,
-            {"waypoint_file_path": LaunchConfiguration(
+            {
+                "waypoint_file_path": LaunchConfiguration(
                     "waypoint_file_path",
-                    default="./src/roar-indy-launches/config/carla_waypoints.txt",),
+                    default="./src/roar-indy-launches/config/carla_waypoints.txt",
+                ),
             },
         ],
+        emulate_tty=True,
     )
     waypoint_follower_server_node = Node(
         name="waypoint_follower_server_node",
         executable="waypoint_follower",
         package="global_planner_manager",
-        parameters=[config_file, 
-                    {"speed_zone_and_lookahead_distance": LaunchConfiguration(
-                     "speed_zone_and_lookahead_distance_path"),
-                    },
+        parameters=[
+            config_file,
+            {
+                "speed_zone_and_lookahead_distance": LaunchConfiguration(
+                    "speed_zone_and_lookahead_distance_path"
+                ),
+            },
         ],
         remappings=[
             (
@@ -72,6 +76,14 @@ def generate_launch_description():
                 LaunchConfiguration("odom_topic", default="/carla/ego_vehicle/odom"),
             )
         ],
+    )
+
+    lifecycle_manager = Node(
+        package="nav2_lifecycle_manager",
+        executable="lifecycle_manager",
+        name="lifecycle_manager_global_planning",
+        output="screen",
+        parameters=[config_file.as_posix()],
     )
     # args
     ld.add_action(waypoint_file_path)
@@ -83,5 +95,6 @@ def generate_launch_description():
     # node
     ld.add_action(global_planner_manager_node)
     ld.add_action(waypoint_follower_server_node)
+    ld.add_action(lifecycle_manager)
 
     return ld

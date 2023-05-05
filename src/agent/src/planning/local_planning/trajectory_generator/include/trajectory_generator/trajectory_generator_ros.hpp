@@ -19,11 +19,16 @@ namespace local_planning
                 const std::string &name,
                 const std::string &parent_namespace,
                 const std::string &local_namespace);
+            explicit TrajectoryGeneratorROS(
+                const std::string &name,
+                const std::string &parent_namespace,
+                const std::string &local_namespace,
+                const bool is_debug);
 
             ~TrajectoryGeneratorROS();
 
             void registerTrajectoryGenerator(const std::shared_ptr<TrajectoryGeneratorInterface> generator);
-
+            
         protected:
             // implement the lifecycle interface
             nav2_util::CallbackReturn on_configure(const rclcpp_lifecycle::State &state) override;
@@ -47,10 +52,12 @@ namespace local_planning
             handle_cancel(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle);
             void handle_accepted(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle);
             void execute(const std::shared_ptr<GoalHandleTrajectoryGeneration> goal_handle);
+            bool canExecute();
 
             std::vector<std::shared_ptr<TrajectoryGeneratorInterface>> trajectory_generators;
-            std::mutex mutex_;
+            std::mutex active_goal_mutex_;
             std::shared_ptr<GoalHandleTrajectoryGeneration> active_goal_; // use this to ensure that only one goal is executing at a time
+    
     };
 } // local_planning
 #endif

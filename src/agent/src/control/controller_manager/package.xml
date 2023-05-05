@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>local_planner_manager</name>
+  <name>controller_manager</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="wuxiaohua1011@gmail.com">michael</maintainer>
@@ -22,12 +22,10 @@
   <depend>tf2_ros</depend>
   <depend>rclcpp_lifecycle</depend>
   <depend>visualization_msgs</depend>
-  <depend>trajectory_generator </depend>
-  <depend>trajectory_scorer </depend>
-  <depend>trajectory_picker </depend>
-  <depend>planning_interfaces </depend>
   <depend>control_interfaces </depend>
-
+  <depend>ackermann_msgs</depend>
+  <depend>rapidjson</depend>
+  <depend>control_toolbox </depend>
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

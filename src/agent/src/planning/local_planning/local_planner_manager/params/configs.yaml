@@ -1,0 +1,11 @@
+local_planner:
+  local_planner_manager:
+    ros__parameters:
+      debug: false
+      manager_rate: 0.1
+      use_sim_time: true
+lifecycle_manager_local_planning:
+  ros__parameters:
+    autostart: true
+    use_sim_time: true
+    node_names: ["/local_planner/local_planner_manager"]

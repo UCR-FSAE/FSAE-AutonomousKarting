@@ -1,0 +1,10 @@
+controller:
+  manager:
+    ros__parameters:
+      debug: false
+      use_sim_time: true
+lifecycle_manager_controller:
+  ros__parameters:
+    autostart: true
+    use_sim_time: true
+    node_names: ["/controller/manager"]
