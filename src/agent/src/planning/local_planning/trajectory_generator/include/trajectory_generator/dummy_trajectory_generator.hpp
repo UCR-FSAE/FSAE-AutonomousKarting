@@ -1,7 +1,7 @@
-#ifndef DUMMY_TRAJECTORY_GENERATOR_CPP
-#define DUMMY_TRAJECTORY_GENERATOR_CPP
+#ifndef DUMMY_TRAJECTORY_GENERATOR_HPP
+#define DUMMY_TRAJECTORY_GENERATOR_HPP
 #include "trajectory_generator/trajectory_generator_interface.hpp"
-
+#include <memory>
 namespace local_planning
 {
     class DummyTrajectoryGenerator : public TrajectoryGeneratorInterface
@@ -22,19 +22,30 @@ namespace local_planning
         return path;
     }
 
-    void setVehicleModel(const std::shared_ptr<VehicleModelInterface> model) override
+    void configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent, 
+                    std::string name, 
+                    std::shared_ptr<tf2_ros::Buffer> tf) override 
     {
-        this->vehicle_model = model;
+    
     }
 
-    std::shared_ptr<VehicleModelInterface> getVehicleModel() override
+    void cleanup() override
     {
-        // Return null pointer
-        return this->vehicle_model;
+
+    }
+
+    void activate() override
+    {
+
+    }
+
+    void deactivate() override
+    {
+
     }
 
     private:
         std::shared_ptr<VehicleModelInterface> vehicle_model;
     };
 }
-#endif // DUMMY_TRAJECTORY_GENERATOR_CPP
+#endif // DUMMY_TRAJECTORY_GENERATOR_HPP
