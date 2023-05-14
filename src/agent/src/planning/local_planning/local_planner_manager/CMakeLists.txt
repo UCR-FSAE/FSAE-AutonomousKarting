@@ -22,6 +22,7 @@ find_package(trajectory_scorer REQUIRED)
 find_package(trajectory_picker REQUIRED)
 find_package(planning_interfaces REQUIRED)
 find_package(control_interfaces REQUIRED)
+find_package(a_star REQUIRED)
 
 add_executable(local_planner_manager_node src/local_planner_manager_node.cpp)
 ament_target_dependencies(local_planner_manager_node
@@ -36,6 +37,7 @@ ament_target_dependencies(local_planner_manager_node
   trajectory_picker
   planning_interfaces
   control_interfaces
+  a_star
 )
 target_include_directories(local_planner_manager_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

@@ -27,6 +27,7 @@
   <depend>trajectory_picker </depend>
   <depend>planning_interfaces </depend>
   <depend>control_interfaces </depend>
+  <depend>a_star</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

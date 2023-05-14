@@ -3,10 +3,10 @@
 
 int main(int argc, char **argv)
 {
-//   rclcpp::init(argc, argv);
-//   auto node = std::make_shared<local_planning::TrajectoryGeneratorROS>("trajectory_generator");
-//   rclcpp::spin(node->get_node_base_interface());
-//   rclcpp::shutdown();
+  // rclcpp::init(argc, argv);
+  // auto node = std::make_shared<local_planning::AStar>("a_star");
+  // rclcpp::spin(node->get_node_base_interface());
+  // rclcpp::shutdown();
 
-  return 0;
+  // return 0;
 }
