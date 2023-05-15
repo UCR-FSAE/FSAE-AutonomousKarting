@@ -8,7 +8,7 @@ namespace local_planning
     {
     public:
     AStar(){
-        this->name = "A*";
+        this->name = "A* algo";
     } 
     nav_msgs::msg::Path
     computeTrajectory(const nav2_msgs::msg::Costmap::SharedPtr costmap,

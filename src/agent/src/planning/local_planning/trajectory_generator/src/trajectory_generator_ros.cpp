@@ -81,18 +81,30 @@ namespace local_planning
             std::bind(&TrajectoryGeneratorROS::handle_goal, this, std::placeholders::_1, std::placeholders::_2),
             std::bind(&TrajectoryGeneratorROS::handle_cancel, this, std::placeholders::_1),
             std::bind(&TrajectoryGeneratorROS::handle_accepted, this, std::placeholders::_1));
+        for (size_t i = 0; i < this->trajectory_generators.size(); i++)
+        {
+            this->trajectory_generators[i]->activate();
+        }
         return nav2_util::CallbackReturn::SUCCESS;
     }
 
     nav2_util::CallbackReturn TrajectoryGeneratorROS::on_deactivate(const rclcpp_lifecycle::State &state)
     {
         RCLCPP_DEBUG(this->get_logger(), "on_deactivate");
+        for (size_t i = 0; i < this->trajectory_generators.size(); i++)
+        {
+            this->trajectory_generators[i]->deactivate();
+        }
         return nav2_util::CallbackReturn::SUCCESS;
     }
 
     nav2_util::CallbackReturn TrajectoryGeneratorROS::on_cleanup(const rclcpp_lifecycle::State &state)
     {
         RCLCPP_DEBUG(this->get_logger(), "on_cleanup");
+        for (size_t i = 0; i < this->trajectory_generators.size(); i++)
+        {
+            this->trajectory_generators[i]->cleanup();
+        }
         return nav2_util::CallbackReturn::SUCCESS;
     }
 

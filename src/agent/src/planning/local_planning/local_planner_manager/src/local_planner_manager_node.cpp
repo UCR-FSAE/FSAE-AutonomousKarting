@@ -1,6 +1,6 @@
 #include "local_planner_manager/local_planner_manager_node.hpp"
 #include "trajectory_generator/dummy_trajectory_generator.hpp"
-// #include <a_star/a_star.hpp>
+#include <a_star/a_star.hpp>
 
 namespace local_planning
 {
@@ -181,9 +181,8 @@ namespace local_planning
   */
   void LocalPlannerManagerNode::register_generators()
   {
-    std::shared_ptr<local_planning::DummyTrajectoryGenerator> generator = std::make_shared<local_planning::DummyTrajectoryGenerator>();
-    // std::shared_ptr<local_planning::AStar> generator = std::make_shared<local_planning::AStar>();
-    this->trajectory_generator_node_->registerTrajectoryGenerator(generator);
+    this->trajectory_generator_node_->registerTrajectoryGenerator(std::make_shared<local_planning::DummyTrajectoryGenerator>());
+    this->trajectory_generator_node_->registerTrajectoryGenerator(std::make_shared<local_planning::AStar>());
   }
   void LocalPlannerManagerNode::send_trajectory_generator_action(
       const nav2_msgs::msg::Costmap::SharedPtr costmap,

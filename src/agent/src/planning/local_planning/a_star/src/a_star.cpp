@@ -3,15 +3,6 @@
 
 namespace local_planning
 {
-    // AStar::AStar()
-    // {
-    //     this->name = "A* Algo";
-    // }
-
-    // AStar::~AStar()
-    // {
-
-    // }
     void AStar::configure(rclcpp_lifecycle::LifecycleNode * parent,
                           std::shared_ptr<tf2_ros::Buffer> tf)
     {
@@ -20,7 +11,7 @@ namespace local_planning
 
         this->name = name;
 
-        RCLCPP_INFO(rclcpp::get_logger(this->name), "A Star algo configured");
+        RCLCPP_INFO(rclcpp::get_logger(this->name), "Configured");
 
     }
 
@@ -28,16 +19,21 @@ namespace local_planning
     {
         this->parent_node = nullptr;
         this->tf_buffer = nullptr;
+        RCLCPP_INFO(rclcpp::get_logger(this->name), "cleanup");
+
     }
 
     void AStar::activate()
     {
         // Implementation details for activation
+        RCLCPP_INFO(rclcpp::get_logger(this->name), "activate");
+
     }
 
     void AStar::deactivate()
     {
         // Implementation details for deactivation
+        RCLCPP_INFO(rclcpp::get_logger(this->name), "deactivate");
     }
 
     nav_msgs::msg::Path AStar::computeTrajectory(const nav2_msgs::msg::Costmap::SharedPtr costmap,
@@ -49,3 +45,4 @@ namespace local_planning
         return path;
     }
 }
+
