@@ -5,6 +5,7 @@
 #include "planning_interfaces/action/trajectory_generation.hpp"
 #include "planning_interfaces/msg/trajectory.hpp"
 #include "trajectory_generator/trajectory_generator_interface.hpp"
+#include "tf2/utils.h"
 
 namespace local_planning
 {
@@ -57,6 +58,8 @@ namespace local_planning
             std::vector<std::shared_ptr<TrajectoryGeneratorInterface>> trajectory_generators;
             std::mutex active_goal_mutex_;
             std::shared_ptr<GoalHandleTrajectoryGeneration> active_goal_; // use this to ensure that only one goal is executing at a time
+
+            std::shared_ptr<tf2_ros::Buffer> tf_buffer;
     
     };
 } // local_planning

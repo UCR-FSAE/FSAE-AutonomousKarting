@@ -63,6 +63,12 @@ namespace local_planning
     TrajectoryGeneratorROS::on_configure(const rclcpp_lifecycle::State &state)
     {
         RCLCPP_DEBUG(this->get_logger(), "on_configure");
+        this->tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+        for (size_t i = 0; i < this->trajectory_generators.size(); i++)
+        {
+            this->trajectory_generators[i]->configure(this, this->tf_buffer);
+        }
+        
         return nav2_util::CallbackReturn::SUCCESS;
     }
 

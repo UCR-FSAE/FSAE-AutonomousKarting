@@ -22,11 +22,10 @@ namespace local_planning
         return path;
     }
 
-    void configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent, 
-                    std::string name, 
+    void configure(rclcpp_lifecycle::LifecycleNode * parent, 
                     std::shared_ptr<tf2_ros::Buffer> tf) override 
     {
-    
+        RCLCPP_INFO(rclcpp::get_logger(this->name), "configuring");
     }
 
     void cleanup() override
@@ -45,7 +44,6 @@ namespace local_planning
     }
 
     private:
-        std::shared_ptr<VehicleModelInterface> vehicle_model;
     };
 }
 #endif // DUMMY_TRAJECTORY_GENERATOR_HPP

@@ -1,15 +1,33 @@
 #include "a_star/a_star.hpp"
+#include <rclcpp/logging.hpp>
 
 namespace local_planning
 {
-    void AStar::configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent, std::string name, std::shared_ptr<tf2_ros::Buffer> tf)
+    // AStar::AStar()
+    // {
+    //     this->name = "A* Algo";
+    // }
+
+    // AStar::~AStar()
+    // {
+
+    // }
+    void AStar::configure(rclcpp_lifecycle::LifecycleNode * parent,
+                          std::shared_ptr<tf2_ros::Buffer> tf)
     {
-        // Implementation details for configuration
+        this->parent_node = parent;
+        this->tf_buffer = tf;
+
+        this->name = name;
+
+        RCLCPP_INFO(rclcpp::get_logger(this->name), "A Star algo configured");
+
     }
 
     void AStar::cleanup()
     {
-        // Implementation details for cleanup
+        this->parent_node = nullptr;
+        this->tf_buffer = nullptr;
     }
 
     void AStar::activate()

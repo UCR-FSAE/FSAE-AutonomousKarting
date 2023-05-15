@@ -1,5 +1,6 @@
 #include "local_planner_manager/local_planner_manager_node.hpp"
 #include "trajectory_generator/dummy_trajectory_generator.hpp"
+// #include <a_star/a_star.hpp>
 
 namespace local_planning
 {
@@ -63,6 +64,7 @@ namespace local_planning
     this->control_action_client_ = rclcpp_action::create_client<ControlAction>(
         this,
         this->controllerServerRoute);
+
     return nav2_util::CallbackReturn::SUCCESS;
   }
   nav2_util::CallbackReturn LocalPlannerManagerNode::on_activate(const rclcpp_lifecycle::State &state)
@@ -179,8 +181,8 @@ namespace local_planning
   */
   void LocalPlannerManagerNode::register_generators()
   {
-    // std::shared_ptr<local_planning::DummyTrajectoryGenerator> dummy_generator = std::make_shared<local_planning::DummyTrajectoryGenerator>();
     std::shared_ptr<local_planning::DummyTrajectoryGenerator> generator = std::make_shared<local_planning::DummyTrajectoryGenerator>();
+    // std::shared_ptr<local_planning::AStar> generator = std::make_shared<local_planning::AStar>();
     this->trajectory_generator_node_->registerTrajectoryGenerator(generator);
   }
   void LocalPlannerManagerNode::send_trajectory_generator_action(
