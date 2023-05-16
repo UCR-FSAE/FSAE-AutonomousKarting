@@ -141,6 +141,13 @@ void AStar::p_bridgeSMACConfigure() {
         this->parent_node->create_publisher<nav_msgs::msg::Path>(
             "unsmoothed_plan", 1);
 
+    _a_star =
+        std::make_unique<smac_planner::AStarAlgorithm<smac_planner::NodeSE2>>(
+            motion_model, search_info);
+
+    _a_star->initialize(allow_unknown, max_iterations,
+                        max_on_approach_iterations);
+
     RCLCPP_INFO(
         rclcpp::get_logger(this->name),
         "Configured plugin %s of type SmacPlanner with "
@@ -163,11 +170,6 @@ nav_msgs::msg::Path AStar::computeTrajectory(
     search_info.minimum_turning_radius =
         search_info.minimum_turning_radius / (costmap->metadata.resolution * 1);
 
-    // _a_star =
-    //     std::make_unique<smac_planner::AStarAlgorithm<smac_planner::NodeSE2>>(
-    //         motion_model, search_info);
-    // _a_star->initialize(allow_unknown, max_iterations,
-    //                     max_on_approach_iterations);
     // TODO: set footprint somehow
     // _a_star->setFootprint(costmap_ros.get()->getRobotFootprint(), false);
 
