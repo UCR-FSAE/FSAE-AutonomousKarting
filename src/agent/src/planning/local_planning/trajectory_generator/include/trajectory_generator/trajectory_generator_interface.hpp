@@ -14,7 +14,7 @@ namespace local_planning
     class TrajectoryGeneratorInterface
     {
         public:
-            virtual void configure(rclcpp_lifecycle::LifecycleNode * parent, 
+            virtual void configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent, 
                                    std::shared_ptr<tf2_ros::Buffer> tf) = 0;
             /**
              * @brief Method to cleanup resources used on shutdown.

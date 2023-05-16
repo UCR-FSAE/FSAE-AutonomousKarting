@@ -36,7 +36,7 @@ public:
                                         const nav_msgs::msg::Odometry::SharedPtr odom,
                                         const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint) override;
 
-  void configure(rclcpp_lifecycle::LifecycleNode* parent, std::shared_ptr<tf2_ros::Buffer> tf) override;
+  void configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent, std::shared_ptr<tf2_ros::Buffer> tf) override;
 
   void cleanup() override;
 
@@ -45,7 +45,7 @@ public:
   void deactivate();
 
 private:
-  rclcpp_lifecycle::LifecycleNode* parent_node;
+  rclcpp_lifecycle::LifecycleNode::SharedPtr parent_node;
   std::shared_ptr<tf2_ros::Buffer> tf_buffer;
 
 protected:

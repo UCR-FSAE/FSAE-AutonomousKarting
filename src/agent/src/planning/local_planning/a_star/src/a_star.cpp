@@ -3,7 +3,7 @@
 
 namespace local_planning
 {
-void AStar::configure(rclcpp_lifecycle::LifecycleNode* parent, std::shared_ptr<tf2_ros::Buffer> tf)
+void AStar::configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent, std::shared_ptr<tf2_ros::Buffer> tf)
 {
   this->parent_node = parent;
   this->tf_buffer = tf;
@@ -120,8 +120,8 @@ void AStar::p_bridgeSMACConfigure()
   if (smooth_path)
   {
     _smoother = std::make_unique<smac_planner::Smoother>();
-    _optimizer_params.get(this->parent_node, name);
-    _smoother_params.get(this->parent_node, name);
+    _optimizer_params.get(this->parent_node.get(), name);
+    _smoother_params.get(this->parent_node.get(), name);
     _smoother_params.max_curvature = 1.0f / minimum_turning_radius_global_coords;
     _smoother->initialize(_optimizer_params);
   }
@@ -130,7 +130,7 @@ void AStar::p_bridgeSMACConfigure()
   {
     std::string topic_name = "downsampled_costmap";
     _costmap_downsampler = std::make_unique<smac_planner::CostmapDownsampler>();
-    // _costmap_downsampler->on_configure(this->parent_node, _global_frame, topic_name, _costmap, _downsampling_factor);
+    _costmap_downsampler->on_configure(this->parent_node, _global_frame, topic_name, _costmap, _downsampling_factor);
   }
 
   _raw_plan_publisher = this->parent_node->create_publisher<nav_msgs::msg::Path>("unsmoothed_plan", 1);
