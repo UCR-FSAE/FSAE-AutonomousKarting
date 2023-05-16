@@ -23,8 +23,14 @@
   <depend>rclcpp_lifecycle</depend>
   <depend>visualization_msgs</depend>
   <depend>trajectory_generator </depend>
+  <depend>libceres-dev</depend>
+  <depend>eigen3_cmake_module</depend>
+  <depend>eigen</depend>
+  <depend>ompl</depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+
 
   <export>
     <build_type>ament_cmake</build_type>
