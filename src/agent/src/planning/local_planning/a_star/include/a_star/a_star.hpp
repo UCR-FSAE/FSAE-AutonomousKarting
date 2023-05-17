@@ -24,7 +24,7 @@
 namespace local_planning {
 class AStar : public TrajectoryGeneratorInterface {
   public:
-    AStar() { this->name = "A* algo"; }
+    AStar() { this->name = "A_star_algo"; }
 
     void p_bridgeSMACConfigure();
 
@@ -53,7 +53,7 @@ class AStar : public TrajectoryGeneratorInterface {
         _a_star;
     std::unique_ptr<smac_planner::Smoother> _smoother;
     rclcpp::Clock::SharedPtr _clock;
-    rclcpp::Logger _logger{rclcpp::get_logger("A* algo")};
+    rclcpp::Logger _logger{rclcpp::get_logger("A_star_algo")};
     // TODO: add this back in
     // std::unique_ptr<smac_planner::CostmapDownsampler> _costmap_downsampler;
 
@@ -130,6 +130,27 @@ class AStar : public TrajectoryGeneratorInterface {
                                           path.end()[-1])) {
             path.end()[-2] = interpolated_second_to_last_point;
         }
+    }
+
+    void p_debugSearchInfo(smac_planner::SearchInfo searchInfo) {
+        RCLCPP_INFO(_logger, "SearchInfo values:");
+        RCLCPP_INFO(_logger, "  Minimum Turning Radius: %.2f",
+                    searchInfo.minimum_turning_radius);
+        RCLCPP_INFO(_logger, "  Non-straight Penalty: %.2f",
+                    searchInfo.non_straight_penalty);
+        RCLCPP_INFO(_logger, "  Change Penalty: %.2f",
+                    searchInfo.change_penalty);
+        RCLCPP_INFO(_logger, "  Reverse Penalty: %.2f",
+                    searchInfo.reverse_penalty);
+        RCLCPP_INFO(_logger, "  Cost Penalty: %.2f", searchInfo.cost_penalty);
+        RCLCPP_INFO(_logger, "  Analytic Expansion Ratio: %.2f",
+                    searchInfo.analytic_expansion_ratio);
+    }
+    void p_debugCostMap(const nav2_msgs::msg::Costmap::SharedPtr msg) {
+        RCLCPP_INFO(_logger, "Received Costmap message");
+        RCLCPP_INFO(_logger, "  Width: %d", msg->metadata.size_x);
+        RCLCPP_INFO(_logger, "  Height: %d", msg->metadata.size_y);
+        RCLCPP_INFO(_logger, "  Resolution: %.3f", msg->metadata.resolution);
     }
 };
 } // namespace local_planning

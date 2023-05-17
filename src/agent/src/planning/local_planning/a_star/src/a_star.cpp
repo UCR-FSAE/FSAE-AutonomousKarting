@@ -11,6 +11,8 @@ void AStar::configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
     this->tf_buffer = tf;
     this->name = name;
 
+    _clock = parent->get_clock();
+
     p_bridgeSMACConfigure();
 
     RCLCPP_INFO(_logger, "Configured");
@@ -24,12 +26,12 @@ void AStar::cleanup() {
 
 void AStar::activate() {
     // Implementation details for activation
-    RCLCPP_INFO(rclcpp::get_logger(this->name), "activate");
+    RCLCPP_INFO(_logger, "activate");
 }
 
 void AStar::deactivate() {
     // Implementation details for deactivation
-    RCLCPP_INFO(rclcpp::get_logger(this->name), "deactivate");
+    RCLCPP_INFO(_logger, "deactivate");
 }
 
 void AStar::p_bridgeSMACConfigure() {
@@ -108,21 +110,20 @@ void AStar::p_bridgeSMACConfigure() {
                                      motion_model_for_search);
     motion_model = smac_planner::fromString(motion_model_for_search);
     if (motion_model == smac_planner::MotionModel::UNKNOWN) {
-        RCLCPP_WARN(rclcpp::get_logger(this->name),
+        RCLCPP_WARN(_logger,
                     "Unable to get MotionModel search type. Given '%s', "
                     "valid options are MOORE, VON_NEUMANN, DUBIN, REEDS_SHEPP.",
                     motion_model_for_search.c_str());
     }
 
     if (max_on_approach_iterations <= 0) {
-        RCLCPP_INFO(rclcpp::get_logger(this->name),
-                    "On approach iteration selected as <= 0, "
-                    "disabling tolerance and on approach iterations.");
+        RCLCPP_INFO(_logger, "On approach iteration selected as <= 0, "
+                             "disabling tolerance and on approach iterations.");
         max_on_approach_iterations = std::numeric_limits<int>::max();
     }
 
     if (max_iterations <= 0) {
-        RCLCPP_INFO(rclcpp::get_logger(this->name),
+        RCLCPP_INFO(_logger,
                     "maximum iteration selected as <= 0, disabling maximum "
                     "iterations.");
         max_iterations = std::numeric_limits<int>::max();
@@ -153,8 +154,9 @@ void AStar::p_bridgeSMACConfigure() {
 
     _raw_plan_publisher->on_activate();
 
+    p_debugSearchInfo(search_info);
     RCLCPP_INFO(
-        rclcpp::get_logger(this->name),
+        _logger,
         "Configured plugin %s of type SmacPlanner with "
         "tolerance %.2f, maximum iterations %i, "
         "max on approach iterations %i, and %s. Using motion model: %s.",
@@ -172,56 +174,71 @@ nav_msgs::msg::Path AStar::computeTrajectory(
     nav_msgs::msg::Path plan;
     // Implementation details for trajectory computation using A*
 
-    RCLCPP_INFO(rclcpp::get_logger(this->name), "minimum_turning_radius = %d",
-                search_info.minimum_turning_radius);
-
-    search_info.minimum_turning_radius =
-        search_info.minimum_turning_radius / (costmap->metadata.resolution * 1);
+    // RCLCPP_INFO(_logger, "*****************");
+    RCLCPP_INFO(_logger, "HERE 1");
 
     // TODO: set footprint somehow
     // _a_star->setFootprint(costmap_ros.get()->getRobotFootprint(), false);
     steady_clock::time_point a = steady_clock::now();
+    RCLCPP_INFO(_logger, "HERE 2");
 
     nav2_costmap_2d::Costmap2D *costmap_nav2 = new nav2_costmap_2d::Costmap2D(
         costmap.get()->metadata.size_x, costmap.get()->metadata.size_y,
         costmap.get()->metadata.resolution,
         costmap.get()->metadata.origin.position.x,
         costmap.get()->metadata.origin.position.y);
-    if (this->fillCostmapFromMsg(costmap_nav2, costmap)) {
+    RCLCPP_INFO(_logger, "HERE 3");
+
+    if (this->fillCostmapFromMsg(costmap_nav2, costmap) == false) {
+        RCLCPP_INFO(_logger, "HERE 4");
+
         plan.poses.push_back(*next_waypoint); // default just emit the next
                                               // waypoint, dummy generator
         return plan;
     }
+    RCLCPP_INFO(_logger, "HERE 5");
 
     _a_star->createGraph(costmap.get()->metadata.size_x,
                          costmap.get()->metadata.size_y, _angle_quantizations,
                          costmap_nav2);
+    RCLCPP_INFO(_logger, "HERE 6");
 
     // Set starting point, in A* bin search coordinates
     unsigned int mx, my;
 
     costmap_nav2->worldToMap(odom->pose.pose.position.x,
                              odom->pose.pose.position.y, mx, my);
+    RCLCPP_INFO(_logger, "HERE 7");
+
     double orientation_bin =
         tf2::getYaw(odom->pose.pose.orientation) / _angle_bin_size;
     while (orientation_bin < 0.0) {
         orientation_bin += static_cast<float>(_angle_quantizations);
     }
+    RCLCPP_INFO(_logger, "HERE 8");
     unsigned int orientation_bin_id =
         static_cast<unsigned int>(floor(orientation_bin));
     _a_star->setStart(mx, my, orientation_bin_id);
-
+    RCLCPP_INFO(_logger, "HERE 9");
     // Set goal point, in A* bin search coordinates
     costmap_nav2->worldToMap(next_waypoint->pose.position.x,
                              next_waypoint->pose.position.y, mx, my);
+    RCLCPP_INFO(_logger, "HERE 9.1");
+
     orientation_bin =
         tf2::getYaw(next_waypoint->pose.orientation) / _angle_bin_size;
+    RCLCPP_INFO(_logger, "HERE 9.2");
+
     while (orientation_bin < 0.0) {
         orientation_bin += static_cast<float>(_angle_quantizations);
     }
-    orientation_bin_id = static_cast<unsigned int>(floor(orientation_bin));
-    _a_star->setGoal(mx, my, orientation_bin_id);
+    RCLCPP_INFO(_logger, "HERE 9.3");
 
+    orientation_bin_id = static_cast<unsigned int>(floor(orientation_bin));
+    RCLCPP_INFO(_logger, "HERE 9.4");
+
+    _a_star->setGoal(mx, my, orientation_bin_id);
+    RCLCPP_INFO(_logger, "HERE 10");
     // Setup message
     plan.header.stamp = _clock->now();
     plan.header.frame_id = _global_frame;
@@ -261,7 +278,6 @@ nav_msgs::msg::Path AStar::computeTrajectory(
 
     // Convert to world coordinates and downsample path for smoothing if
     // necesssary We're going to downsample by 4x to give terms room to move.
-    const int downsample_ratio = 4;
     std::vector<Eigen::Vector2d> path_world;
     path_world.reserve(path.size());
     plan.poses.reserve(path.size());
