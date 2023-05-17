@@ -77,6 +77,60 @@ class AStar : public TrajectoryGeneratorInterface {
 
     bool smooth_path;
     std::string motion_model_for_search;
+
+    bool fillCostmapFromMsg(nav2_costmap_2d::Costmap2D *costmap,
+                            const nav2_msgs::msg::Costmap::SharedPtr msg) {
+        if (costmap == nullptr || msg == nullptr) {
+            return false; // or throw an exception, depending on your
+                          // requirements
+        }
+        const std::vector<uint8_t> &data = msg->data;
+        unsigned int width = msg->metadata.size_x;
+        unsigned int height = msg->metadata.size_y;
+
+        costmap->resizeMap(width, height, msg->metadata.resolution,
+                           msg->metadata.origin.position.x,
+                           msg->metadata.origin.position.y);
+
+        for (unsigned int y = 0; y < height; ++y) {
+            for (unsigned int x = 0; x < width; ++x) {
+                unsigned char cost = data[y * width + x];
+                costmap->setCost(x, y, cost);
+            }
+        }
+        return true;
+    }
+
+    Eigen::Vector2d getWorldCoords(const float &mx, const float &my,
+                                   const nav2_costmap_2d::Costmap2D *costmap) {
+        // mx, my are in continuous grid coordinates, must convert to world
+        // coordinates
+        double world_x = static_cast<double>(costmap->getOriginX()) +
+                         (mx + 0.5) * costmap->getResolution();
+        double world_y = static_cast<double>(costmap->getOriginY()) +
+                         (my + 0.5) * costmap->getResolution();
+        return Eigen::Vector2d(world_x, world_y);
+    }
+
+    geometry_msgs::msg::Quaternion getWorldOrientation(const float &theta) {
+        // theta is in continuous bin coordinates, must convert to world
+        // orientation
+        tf2::Quaternion q;
+        q.setEuler(0.0, 0.0, theta * static_cast<double>(_angle_bin_size));
+        return tf2::toMsg(q);
+    }
+
+    void removeHook(std::vector<Eigen::Vector2d> &path) {
+        // Removes the end "hooking" since goal is locked in place
+        Eigen::Vector2d interpolated_second_to_last_point;
+        interpolated_second_to_last_point =
+            (path.end()[-3] + path.end()[-1]) / 2.0;
+        if (smac_planner::squaredDistance(path.end()[-2], path.end()[-1]) >
+            smac_planner::squaredDistance(interpolated_second_to_last_point,
+                                          path.end()[-1])) {
+            path.end()[-2] = interpolated_second_to_last_point;
+        }
+    }
 };
 } // namespace local_planning
 #endif // A_STAR_HPP_

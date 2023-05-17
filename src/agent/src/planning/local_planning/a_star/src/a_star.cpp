@@ -1,6 +1,9 @@
 #include "a_star/a_star.hpp"
 #include <rclcpp/logging.hpp>
 
+using namespace std::chrono; // NOLINT
+#define BENCHMARK_TESTING
+
 namespace local_planning {
 void AStar::configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
                       std::shared_ptr<tf2_ros::Buffer> tf) {
@@ -148,6 +151,8 @@ void AStar::p_bridgeSMACConfigure() {
     _a_star->initialize(allow_unknown, max_iterations,
                         max_on_approach_iterations);
 
+    _raw_plan_publisher->on_activate();
+
     RCLCPP_INFO(
         rclcpp::get_logger(this->name),
         "Configured plugin %s of type SmacPlanner with "
@@ -164,6 +169,9 @@ nav_msgs::msg::Path AStar::computeTrajectory(
     const nav_msgs::msg::Odometry::SharedPtr odom,
     const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint) {
 
+    nav_msgs::msg::Path plan;
+    // Implementation details for trajectory computation using A*
+
     RCLCPP_INFO(rclcpp::get_logger(this->name), "minimum_turning_radius = %d",
                 search_info.minimum_turning_radius);
 
@@ -172,11 +180,145 @@ nav_msgs::msg::Path AStar::computeTrajectory(
 
     // TODO: set footprint somehow
     // _a_star->setFootprint(costmap_ros.get()->getRobotFootprint(), false);
+    steady_clock::time_point a = steady_clock::now();
 
-    nav_msgs::msg::Path path;
-    // Implementation details for trajectory computation using A*
-    path.poses.push_back(*next_waypoint);
+    nav2_costmap_2d::Costmap2D *costmap_nav2 = new nav2_costmap_2d::Costmap2D(
+        costmap.get()->metadata.size_x, costmap.get()->metadata.size_y,
+        costmap.get()->metadata.resolution,
+        costmap.get()->metadata.origin.position.x,
+        costmap.get()->metadata.origin.position.y);
+    if (this->fillCostmapFromMsg(costmap_nav2, costmap)) {
+        plan.poses.push_back(*next_waypoint); // default just emit the next
+                                              // waypoint, dummy generator
+        return plan;
+    }
 
-    return path;
+    _a_star->createGraph(costmap.get()->metadata.size_x,
+                         costmap.get()->metadata.size_y, _angle_quantizations,
+                         costmap_nav2);
+
+    // Set starting point, in A* bin search coordinates
+    unsigned int mx, my;
+
+    costmap_nav2->worldToMap(odom->pose.pose.position.x,
+                             odom->pose.pose.position.y, mx, my);
+    double orientation_bin =
+        tf2::getYaw(odom->pose.pose.orientation) / _angle_bin_size;
+    while (orientation_bin < 0.0) {
+        orientation_bin += static_cast<float>(_angle_quantizations);
+    }
+    unsigned int orientation_bin_id =
+        static_cast<unsigned int>(floor(orientation_bin));
+    _a_star->setStart(mx, my, orientation_bin_id);
+
+    // Set goal point, in A* bin search coordinates
+    costmap_nav2->worldToMap(next_waypoint->pose.position.x,
+                             next_waypoint->pose.position.y, mx, my);
+    orientation_bin =
+        tf2::getYaw(next_waypoint->pose.orientation) / _angle_bin_size;
+    while (orientation_bin < 0.0) {
+        orientation_bin += static_cast<float>(_angle_quantizations);
+    }
+    orientation_bin_id = static_cast<unsigned int>(floor(orientation_bin));
+    _a_star->setGoal(mx, my, orientation_bin_id);
+
+    // Setup message
+    plan.header.stamp = _clock->now();
+    plan.header.frame_id = _global_frame;
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header = plan.header;
+    pose.pose.position.z = 0.0;
+    pose.pose.orientation.x = 0.0;
+    pose.pose.orientation.y = 0.0;
+    pose.pose.orientation.z = 0.0;
+    pose.pose.orientation.w = 1.0;
+
+    // Compute plan
+    smac_planner::NodeSE2::CoordinateVector path;
+    int num_iterations = 0;
+    std::string error;
+    try {
+        if (!_a_star->createPath(
+                path, num_iterations,
+                _tolerance /
+                    static_cast<float>(costmap_nav2->getResolution()))) {
+            if (num_iterations < _a_star->getMaxIterations()) {
+                error = std::string("no valid path found");
+            } else {
+                error = std::string("exceeded maximum iterations");
+            }
+        }
+    } catch (const std::runtime_error &e) {
+        error = "invalid use: ";
+        error += e.what();
+    }
+
+    if (!error.empty()) {
+        RCLCPP_WARN(_logger, "%s: failed to create plan, %s.", _name.c_str(),
+                    error.c_str());
+        return plan;
+    }
+
+    // Convert to world coordinates and downsample path for smoothing if
+    // necesssary We're going to downsample by 4x to give terms room to move.
+    const int downsample_ratio = 4;
+    std::vector<Eigen::Vector2d> path_world;
+    path_world.reserve(path.size());
+    plan.poses.reserve(path.size());
+
+    for (int i = path.size() - 1; i >= 0; --i) {
+        path_world.push_back(
+            getWorldCoords(path[i].x, path[i].y, costmap_nav2));
+        pose.pose.position.x = path_world.back().x();
+        pose.pose.position.y = path_world.back().y();
+        pose.pose.orientation = getWorldOrientation(path[i].theta);
+        plan.poses.push_back(pose);
+    }
+
+    // Publish raw path for debug
+    if (_raw_plan_publisher->get_subscription_count() > 0) {
+        _raw_plan_publisher->publish(plan);
+    }
+
+    // If not smoothing or too short to smooth, return path
+    if (!_smoother || path_world.size() < 4) {
+#ifdef BENCHMARK_TESTING
+        steady_clock::time_point b = steady_clock::now();
+        duration<double> time_span = duration_cast<duration<double>>(b - a);
+        std::cout << "It took " << time_span.count() * 1000
+                  << " milliseconds with " << num_iterations << " iterations."
+                  << std::endl;
+#endif
+        return plan;
+    }
+
+    // Find how much time we have left to do smoothing
+    steady_clock::time_point b = steady_clock::now();
+    duration<double> time_span = duration_cast<duration<double>>(b - a);
+    double time_remaining =
+        _max_planning_time - static_cast<double>(time_span.count());
+    _smoother_params.max_time =
+        std::min(time_remaining, _optimizer_params.max_time);
+
+    // Smooth plan
+    if (!_smoother->smooth(path_world, costmap_nav2, _smoother_params)) {
+        RCLCPP_WARN(_logger,
+                    "%s: failed to smooth plan, Ceres could not find a usable "
+                    "solution to optimize.",
+                    _name.c_str());
+        return plan;
+    }
+
+    removeHook(path_world);
+
+    // populate final path
+    // TODO(stevemacenski): set orientation to tangent of path
+    for (unsigned int i = 0; i != path_world.size(); i++) {
+        pose.pose.position.x = path_world[i][0];
+        pose.pose.position.y = path_world[i][1];
+        plan.poses[i] = pose;
+    }
+
+    return plan;
 }
 } // namespace local_planning
