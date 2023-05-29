@@ -21,18 +21,26 @@
 #include <smac_planner/constants.hpp>
 #include <smac_planner/types.hpp>
 
+#define DEBUG true
+
 namespace local_planning {
 class AStar : public TrajectoryGeneratorInterface {
   public:
-    AStar() { this->name = "A_star_algo"; }
+    AStar() {
+        this->name = "A_star_algo";
+        if (DEBUG) {
+            auto ret = rcutils_logging_set_logger_level(
+                _logger.get_name(),
+                RCUTILS_LOG_SEVERITY_DEBUG); // enable or disable debug
+        }
+    }
 
     void p_bridgeSMACConfigure();
 
-    nav_msgs::msg::Path
-    computeTrajectory(const nav2_msgs::msg::Costmap::SharedPtr costmap,
-                      const nav_msgs::msg::Odometry::SharedPtr odom,
-                      const geometry_msgs::msg::PoseStamped::SharedPtr
-                          next_waypoint) override;
+    nav_msgs::msg::Path computeTrajectory(
+        const std::shared_ptr<
+            const planning_interfaces::action::TrajectoryGeneration_Goal>
+            request) override;
 
     void configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
                    std::shared_ptr<tf2_ros::Buffer> tf) override;
@@ -57,7 +65,7 @@ class AStar : public TrajectoryGeneratorInterface {
     // TODO: add this back in
     // std::unique_ptr<smac_planner::CostmapDownsampler> _costmap_downsampler;
 
-    std::string _global_frame, _name;
+    std::string _ego_frame, _name, _global_frame;
     float _tolerance;
     unsigned int _angle_quantizations;
     double _angle_bin_size;
@@ -78,11 +86,10 @@ class AStar : public TrajectoryGeneratorInterface {
     bool smooth_path;
     std::string motion_model_for_search;
 
-    bool fillCostmapFromMsg(nav2_costmap_2d::Costmap2D *costmap,
-                            const nav2_msgs::msg::Costmap::SharedPtr msg) {
+    void fillCostmapFromMsg(nav2_costmap_2d::Costmap2D *costmap,
+                            const nav2_msgs::msg::Costmap *msg) {
         if (costmap == nullptr || msg == nullptr) {
-            return false; // or throw an exception, depending on your
-                          // requirements
+            throw std::runtime_error("undefined costmap or costmap msg");
         }
         const std::vector<uint8_t> &data = msg->data;
         unsigned int width = msg->metadata.size_x;
@@ -98,7 +105,6 @@ class AStar : public TrajectoryGeneratorInterface {
                 costmap->setCost(x, y, cost);
             }
         }
-        return true;
     }
 
     Eigen::Vector2d getWorldCoords(const float &mx, const float &my,
@@ -146,11 +152,34 @@ class AStar : public TrajectoryGeneratorInterface {
         RCLCPP_INFO(_logger, "  Analytic Expansion Ratio: %.2f",
                     searchInfo.analytic_expansion_ratio);
     }
-    void p_debugCostMap(const nav2_msgs::msg::Costmap::SharedPtr msg) {
-        RCLCPP_INFO(_logger, "Received Costmap message");
-        RCLCPP_INFO(_logger, "  Width: %d", msg->metadata.size_x);
-        RCLCPP_INFO(_logger, "  Height: %d", msg->metadata.size_y);
-        RCLCPP_INFO(_logger, "  Resolution: %.3f", msg->metadata.resolution);
+    void p_debugCostMapMsg(const nav2_msgs::msg::Costmap *msg) {
+        RCLCPP_DEBUG(_logger, "Received Costmap message");
+        RCLCPP_DEBUG(_logger, "  Width: %d", msg->metadata.size_x);
+        RCLCPP_DEBUG(_logger, "  Height: %d", msg->metadata.size_y);
+        RCLCPP_DEBUG(_logger, "  Resolution: %.3f", msg->metadata.resolution);
+        RCLCPP_DEBUG(_logger, "  origin_x: %.3f",
+                     msg->metadata.origin.position.x);
+        RCLCPP_DEBUG(_logger, "  origin_y: %.3f",
+                     msg->metadata.origin.position.y);
+    }
+
+    void p_debugCostMap(nav2_costmap_2d::Costmap2D *costmap_nav2) {
+        RCLCPP_DEBUG(_logger, "costmap_nav2: ");
+        RCLCPP_DEBUG(_logger, "  x_size: %d", costmap_nav2->getSizeInCellsX());
+        RCLCPP_DEBUG(_logger, "  y_size: %d", costmap_nav2->getSizeInCellsY());
+        RCLCPP_DEBUG(_logger, "  Resolution: %.3f",
+                     costmap_nav2->getResolution());
+        RCLCPP_DEBUG(_logger, "  origin_x: %.3f", costmap_nav2->getOriginX());
+        RCLCPP_DEBUG(_logger, "  origin_y: %.3f", costmap_nav2->getOriginY());
+    }
+
+    void p_defaultSolution(nav_msgs::msg::Path *plan,
+                           const geometry_msgs::msg::PoseStamped *next_waypoint,
+                           const std::string reason) {
+        RCLCPP_WARN(_logger, "Default solution emitted. Reason: [%s]",
+                    reason.c_str());
+
+        plan->poses.push_back(*next_waypoint); // default just emit the next
     }
 };
 } // namespace local_planning

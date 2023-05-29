@@ -15,23 +15,23 @@ void AStar::configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
 
     p_bridgeSMACConfigure();
 
-    RCLCPP_INFO(_logger, "Configured");
+    RCLCPP_DEBUG(_logger, "Configured");
 }
 
 void AStar::cleanup() {
     this->parent_node = nullptr;
     this->tf_buffer = nullptr;
-    RCLCPP_INFO(_logger, "cleanup");
+    RCLCPP_DEBUG(_logger, "cleanup");
 }
 
 void AStar::activate() {
     // Implementation details for activation
-    RCLCPP_INFO(_logger, "activate");
+    RCLCPP_DEBUG(_logger, "activate");
 }
 
 void AStar::deactivate() {
     // Implementation details for deactivation
-    RCLCPP_INFO(_logger, "deactivate");
+    RCLCPP_DEBUG(_logger, "deactivate");
 }
 
 void AStar::p_bridgeSMACConfigure() {
@@ -117,15 +117,16 @@ void AStar::p_bridgeSMACConfigure() {
     }
 
     if (max_on_approach_iterations <= 0) {
-        RCLCPP_INFO(_logger, "On approach iteration selected as <= 0, "
-                             "disabling tolerance and on approach iterations.");
+        RCLCPP_DEBUG(_logger,
+                     "On approach iteration selected as <= 0, "
+                     "disabling tolerance and on approach iterations.");
         max_on_approach_iterations = std::numeric_limits<int>::max();
     }
 
     if (max_iterations <= 0) {
-        RCLCPP_INFO(_logger,
-                    "maximum iteration selected as <= 0, disabling maximum "
-                    "iterations.");
+        RCLCPP_DEBUG(_logger,
+                     "maximum iteration selected as <= 0, disabling maximum "
+                     "iterations.");
         max_iterations = std::numeric_limits<int>::max();
     }
     // convert to grid coordinates
@@ -155,7 +156,7 @@ void AStar::p_bridgeSMACConfigure() {
     _raw_plan_publisher->on_activate();
 
     p_debugSearchInfo(search_info);
-    RCLCPP_INFO(
+    RCLCPP_DEBUG(
         _logger,
         "Configured plugin %s of type SmacPlanner with "
         "tolerance %.2f, maximum iterations %i, "
@@ -167,83 +168,114 @@ void AStar::p_bridgeSMACConfigure() {
 }
 
 nav_msgs::msg::Path AStar::computeTrajectory(
-    const nav2_msgs::msg::Costmap::SharedPtr costmap,
-    const nav_msgs::msg::Odometry::SharedPtr odom,
-    const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint) {
+    const std::shared_ptr<
+        const planning_interfaces::action::TrajectoryGeneration_Goal>
+        request) {
+    RCLCPP_DEBUG(_logger, "odom - x: [%.3f] | y: [% .3f]",
+                 request->odom.pose.pose.position.x,
+                 request->odom.pose.pose.position.y);
+    RCLCPP_DEBUG(_logger, "next_waypoint - x: [%.3f] | y: [%.3f] | ",
+                 request->next_waypoint.pose.position.x,
+                 request->next_waypoint.pose.position.y);
 
-    nav_msgs::msg::Path plan;
+    _global_frame = request->odom.header.frame_id;
+    _ego_frame = request->odom.child_frame_id;
+    nav_msgs::msg::Path plan_global;
     // Implementation details for trajectory computation using A*
 
-    // RCLCPP_INFO(_logger, "*****************");
-    RCLCPP_INFO(_logger, "HERE 1");
-
     // TODO: set footprint somehow
-    // _a_star->setFootprint(costmap_ros.get()->getRobotFootprint(), false);
     steady_clock::time_point a = steady_clock::now();
-    RCLCPP_INFO(_logger, "HERE 2");
 
+    /* set costmap and initiate graph for A* search */
     nav2_costmap_2d::Costmap2D *costmap_nav2 = new nav2_costmap_2d::Costmap2D(
-        costmap.get()->metadata.size_x, costmap.get()->metadata.size_y,
-        costmap.get()->metadata.resolution,
-        costmap.get()->metadata.origin.position.x,
-        costmap.get()->metadata.origin.position.y);
-    RCLCPP_INFO(_logger, "HERE 3");
+        request->costmap.metadata.size_x, request->costmap.metadata.size_y,
+        request->costmap.metadata.resolution,
+        request->costmap.metadata.origin.position.x,
+        request->costmap.metadata.origin.position.y);
+    // _a_star->setFootprint(costmap_nav2->getRo, false);
+    p_debugCostMapMsg(&request->costmap);
+    p_debugCostMap(costmap_nav2);
 
-    if (this->fillCostmapFromMsg(costmap_nav2, costmap) == false) {
-        RCLCPP_INFO(_logger, "HERE 4");
-
-        plan.poses.push_back(*next_waypoint); // default just emit the next
-                                              // waypoint, dummy generator
-        return plan;
+    try {
+        this->fillCostmapFromMsg(costmap_nav2, &request->costmap);
+    } catch (const std::exception &e) {
+        p_defaultSolution(&plan_global, &request->next_waypoint,
+                          "unable to fill costmap from costmap message");
+        return plan_global;
     }
-    RCLCPP_INFO(_logger, "HERE 5");
 
-    _a_star->createGraph(costmap.get()->metadata.size_x,
-                         costmap.get()->metadata.size_y, _angle_quantizations,
+    _a_star->createGraph(request->costmap.metadata.size_x,
+                         request->costmap.metadata.size_y, _angle_quantizations,
                          costmap_nav2);
-    RCLCPP_INFO(_logger, "HERE 6");
 
-    // Set starting point, in A* bin search coordinates
+    /* set start */
     unsigned int mx, my;
 
-    costmap_nav2->worldToMap(odom->pose.pose.position.x,
-                             odom->pose.pose.position.y, mx, my);
-    RCLCPP_INFO(_logger, "HERE 7");
+    if (!costmap_nav2->worldToMap(0, 0, mx, my)) {
+
+        RCLCPP_WARN(_logger, "start.x: [%.3f] | start.y: [%.3f]",
+                    request->odom.pose.pose.position.x,
+                    request->odom.pose.pose.position.y);
+        p_defaultSolution(&plan_global, &request->next_waypoint,
+                          "Failed to "
+                          "convert robot position to map coord");
+        return plan_global;
+    }
 
     double orientation_bin =
-        tf2::getYaw(odom->pose.pose.orientation) / _angle_bin_size;
+        tf2::getYaw(request->odom.pose.pose.orientation) / _angle_bin_size;
     while (orientation_bin < 0.0) {
         orientation_bin += static_cast<float>(_angle_quantizations);
     }
-    RCLCPP_INFO(_logger, "HERE 8");
     unsigned int orientation_bin_id =
-        static_cast<unsigned int>(floor(orientation_bin));
-    _a_star->setStart(mx, my, orientation_bin_id);
-    RCLCPP_INFO(_logger, "HERE 9");
-    // Set goal point, in A* bin search coordinates
-    costmap_nav2->worldToMap(next_waypoint->pose.position.x,
-                             next_waypoint->pose.position.y, mx, my);
-    RCLCPP_INFO(_logger, "HERE 9.1");
+        0; // static_cast<unsigned int>(floor(orientation_bin));
+    _a_star->setStart(mx, my, 0); // orientation_bin_id);
+
+    RCLCPP_DEBUG(_logger,
+                 "start - mx: [%d] | my: [%d] | orientation_bin_id: [%d]", mx,
+                 my, orientation_bin_id);
+    /* set goal location */
+
+    // calc distance from goal to ego so that we can find world->occupancy map
+    /**
+     * NOTE: we have reversed the coordinate here due to
+     */
+    float goal_x = request->next_waypoint.pose.position.y -
+                   request->odom.pose.pose.position.y;
+    float goal_y = request->next_waypoint.pose.position.x -
+                   request->odom.pose.pose.position.x;
+
+    RCLCPP_DEBUG(_logger,
+                 "goal - x: [%.3f] | y: [%.3f] | orientation_bin_id: [%d]",
+                 goal_x, goal_y, orientation_bin_id);
+
+    if (!costmap_nav2->worldToMap(goal_x, goal_y, mx, my)) {
+        p_defaultSolution(&plan_global, &request->next_waypoint,
+                          "Failed to convert waypoint position to map coord");
+        return plan_global;
+    }
 
     orientation_bin =
-        tf2::getYaw(next_waypoint->pose.orientation) / _angle_bin_size;
-    RCLCPP_INFO(_logger, "HERE 9.2");
+        tf2::getYaw(request->next_waypoint.pose.orientation) / _angle_bin_size;
 
     while (orientation_bin < 0.0) {
         orientation_bin += static_cast<float>(_angle_quantizations);
     }
-    RCLCPP_INFO(_logger, "HERE 9.3");
 
-    orientation_bin_id = static_cast<unsigned int>(floor(orientation_bin));
-    RCLCPP_INFO(_logger, "HERE 9.4");
+    orientation_bin_id =
+        0; // static_cast<unsigned int>(floor(orientation_bin));
 
-    _a_star->setGoal(mx, my, orientation_bin_id);
-    RCLCPP_INFO(_logger, "HERE 10");
+    RCLCPP_DEBUG(_logger,
+                 "goal - mx: [%d] | my: [%d] | orientation_bin_id: [%d]", mx,
+                 my, orientation_bin_id);
+
+    _a_star->setGoal(mx, my, 0);
+
     // Setup message
-    plan.header.stamp = _clock->now();
-    plan.header.frame_id = _global_frame;
+    plan_global.header.stamp = _clock->now();
+    plan_global.header.frame_id = _global_frame;
     geometry_msgs::msg::PoseStamped pose;
-    pose.header = plan.header;
+    pose.header = plan_global.header;
     pose.pose.position.z = 0.0;
     pose.pose.orientation.x = 0.0;
     pose.pose.orientation.y = 0.0;
@@ -273,27 +305,52 @@ nav_msgs::msg::Path AStar::computeTrajectory(
     if (!error.empty()) {
         RCLCPP_WARN(_logger, "%s: failed to create plan, %s.", _name.c_str(),
                     error.c_str());
-        return plan;
+        return plan_global;
     }
 
     // Convert to world coordinates and downsample path for smoothing if
     // necesssary We're going to downsample by 4x to give terms room to move.
     std::vector<Eigen::Vector2d> path_world;
-    path_world.reserve(path.size());
-    plan.poses.reserve(path.size());
+    nav_msgs::msg::Path plan_ego;
+    plan_ego.header.frame_id = _ego_frame;
 
+    path_world.reserve(path.size());
+    plan_ego.poses.reserve(path.size());
+    RCLCPP_DEBUG(_logger, "Coordinates on ego vehicle frame");
     for (int i = path.size() - 1; i >= 0; --i) {
         path_world.push_back(
             getWorldCoords(path[i].x, path[i].y, costmap_nav2));
         pose.pose.position.x = path_world.back().x();
         pose.pose.position.y = path_world.back().y();
         pose.pose.orientation = getWorldOrientation(path[i].theta);
-        plan.poses.push_back(pose);
+        plan_ego.poses.push_back(pose);
+    }
+    for (size_t i = 0; i < plan_ego.poses.size(); i++) {
+        RCLCPP_DEBUG(_logger, "i: [%d] | x: [%.3f] | y: [%.3f]", i,
+                     plan_ego.poses[i].pose.position.x,
+                     plan_ego.poses[i].pose.position.y);
     }
 
-    // Publish raw path for debug
+    // Publish raw path for debug, in ego frame
     if (_raw_plan_publisher->get_subscription_count() > 0) {
-        _raw_plan_publisher->publish(plan);
+        _raw_plan_publisher->publish(plan_ego);
+    }
+
+    // full fill the global frame
+    RCLCPP_DEBUG(_logger, "Coordinates on map frame");
+    for (std::size_t i = 0; i < plan_ego.poses.size(); i++) {
+        geometry_msgs::msg::PoseStamped p_global;
+        /**
+         * Note: we did a transformation back
+         */
+        p_global.pose.position.x = plan_ego.poses[i].pose.position.y +
+                                   request->odom.pose.pose.position.x;
+        p_global.pose.position.y = plan_ego.poses[i].pose.position.x +
+                                   request->odom.pose.pose.position.y;
+
+        RCLCPP_DEBUG(_logger, "i: [%d] | x: [%.3f] | y: [%.3f]", i,
+                     p_global.pose.position.x, p_global.pose.position.y);
+        plan_global.poses.push_back(p_global);
     }
 
     // If not smoothing or too short to smooth, return path
@@ -301,11 +358,10 @@ nav_msgs::msg::Path AStar::computeTrajectory(
 #ifdef BENCHMARK_TESTING
         steady_clock::time_point b = steady_clock::now();
         duration<double> time_span = duration_cast<duration<double>>(b - a);
-        std::cout << "It took " << time_span.count() * 1000
-                  << " milliseconds with " << num_iterations << " iterations."
-                  << std::endl;
 #endif
-        return plan;
+        RCLCPP_DEBUG(_logger, "---------------");
+
+        return plan_global;
     }
 
     // Find how much time we have left to do smoothing
@@ -322,19 +378,20 @@ nav_msgs::msg::Path AStar::computeTrajectory(
                     "%s: failed to smooth plan, Ceres could not find a usable "
                     "solution to optimize.",
                     _name.c_str());
-        return plan;
+        RCLCPP_DEBUG(_logger, "---------------");
+        return plan_global;
     }
 
     removeHook(path_world);
 
     // populate final path
-    // TODO(stevemacenski): set orientation to tangent of path
     for (unsigned int i = 0; i != path_world.size(); i++) {
         pose.pose.position.x = path_world[i][0];
         pose.pose.position.y = path_world[i][1];
-        plan.poses[i] = pose;
+        plan_global.poses[i] = pose;
     }
-
-    return plan;
+    RCLCPP_DEBUG(_logger, "---------------");
+    return plan_global;
 }
+
 } // namespace local_planning

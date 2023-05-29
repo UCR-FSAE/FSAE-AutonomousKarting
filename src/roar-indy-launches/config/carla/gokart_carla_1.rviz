@@ -6,15 +6,14 @@ Panels:
       Expanded:
         - /Global Options1
         - /Mapping1
-        - /Mapping1/Local Map1
-        - /Mapping1/Local Map1/LocalMap1
         - /Mapping1/Local Map1/LocalMap1/Topic1
         - /Mapping1/Local Map1/LocalMap1/Update Topic1
+        - /Mapping1/Local Map1/localVehicleOutline1
         - /Mapping1/Global Map1
         - /Planning1
-        - /Planning1/Global Planning1
         - /Planning1/Global Planning1/next_waypoint_visualizer1
-        - /Control1
+        - /Planning1/Local Planner1
+        - /Planning1/Local Planner1/a* raw path1
         - /Control1/PID1
         - /Control1/PID1/Marker1
         - /Control1/PID1/Marker1/Topic1
@@ -102,7 +101,7 @@ Visualization Manager:
                 Reliability Policy: Reliable
                 Value: /local_costmap/published_footprint
               Value: true
-          Enabled: true
+          Enabled: false
           Name: Local Map
         - Class: rviz_common/Group
           Displays:
@@ -165,7 +164,7 @@ Visualization Manager:
               Enabled: true
               Name: next_waypoint_visualizer
               Namespaces:
-                {}
+                "": true
               Topic:
                 Depth: 5
                 Durability Policy: Volatile
@@ -175,6 +174,37 @@ Visualization Manager:
               Value: true
           Enabled: true
           Name: Global Planning
+        - Class: rviz_common/Group
+          Displays:
+            - Alpha: 1
+              Buffer Length: 1
+              Class: rviz_default_plugins/Path
+              Color: 0; 163; 255
+              Enabled: true
+              Head Diameter: 0.30000001192092896
+              Head Length: 0.20000000298023224
+              Length: 0.30000001192092896
+              Line Style: Lines
+              Line Width: 0.029999999329447746
+              Name: a* raw path
+              Offset:
+                X: 0
+                Y: 0
+                Z: 0
+              Pose Color: 255; 85; 255
+              Pose Style: None
+              Radius: 0.029999999329447746
+              Shaft Diameter: 0.10000000149011612
+              Shaft Length: 0.10000000149011612
+              Topic:
+                Depth: 5
+                Durability Policy: Volatile
+                History Policy: Keep Last
+                Reliability Policy: Reliable
+                Value: /local_planner/trajectory/unsmoothed_plan
+              Value: true
+          Enabled: true
+          Name: Local Planner
       Enabled: true
       Name: Planning
     - Class: rviz_common/Group
@@ -352,25 +382,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 56.534610748291016
+      Distance: 30.026016235351562
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0.9328880310058594
-        Y: -3.6293907165527344
-        Z: 0.020299911499023438
+        X: 2.0090432167053223
+        Y: 0.47051945328712463
+        Z: 0.25194114446640015
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5818655490875244
+      Pitch: 0.971865177154541
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: -2.906850814819336
+      Yaw: 3.1713340282440186
     Saved: ~
 Window Geometry:
   Displays:

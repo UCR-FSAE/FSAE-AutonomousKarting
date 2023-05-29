@@ -63,6 +63,14 @@ class LocalPlannerManagerNode : public nav2_util::LifecycleNode {
     std::mutex waypoint_mutex;
     void onLatestWaypointReceived(geometry_msgs::msg::Pose::SharedPtr msg);
 
+    /* footprint */
+    std::shared_ptr<geometry_msgs::msg::PolygonStamped> latest_footprint_;
+    rclcpp::Subscription<geometry_msgs::msg::PolygonStamped>::ConstSharedPtr
+        footprint_sub_;
+    std::mutex footprint_mutex;
+    void onLatestFootprintReceived(
+        geometry_msgs::msg::PolygonStamped::SharedPtr msg);
+
     /* Odometry */
     std::shared_ptr<nav_msgs::msg::Odometry> latest_odom;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::ConstSharedPtr odom_sub_;
@@ -92,7 +100,8 @@ class LocalPlannerManagerNode : public nav2_util::LifecycleNode {
     void send_trajectory_generator_action(
         const nav2_msgs::msg::Costmap::SharedPtr costmap,
         const nav_msgs::msg::Odometry::SharedPtr odom,
-        const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint);
+        const geometry_msgs::msg::PoseStamped::SharedPtr next_waypoint,
+        const geometry_msgs::msg::PolygonStamped::SharedPtr footprint);
     void register_generators();
     int num_generator_execution = 0;
 

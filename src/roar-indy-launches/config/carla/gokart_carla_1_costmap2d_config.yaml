@@ -16,9 +16,9 @@ local_costmap:
       robot_base_frame: ego_vehicle
       use_sim_time: True
       rolling_window: true
-      width: 50
-      height: 20
-      resolution: 0.5
+      width: 100
+      height: 40
+      resolution: 1.0
       footprint_padding: 1.0
       footprint: "[[-1.0, -1.0], [-1.0, 1.0], [1.0, 1.0], [2.5, 0.0], [1.0, -1.0]]"
 
