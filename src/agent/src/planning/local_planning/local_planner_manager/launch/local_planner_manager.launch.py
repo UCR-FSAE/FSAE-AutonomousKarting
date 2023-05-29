@@ -16,6 +16,7 @@ def generate_launch_description():
 
     config_file = base_path / "params" / "configs.yaml"
     assert config_file.exists()
+    print(f"Local Planner config file: [{config_file}]")
     local_planner_manager_node = Node(
         name="local_planner_manager",
         executable="local_planner_manager_node",

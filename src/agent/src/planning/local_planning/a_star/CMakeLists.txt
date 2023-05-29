@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
-project(local_planner_manager)
+project(a_star)
 
+
+find_package(ament_cmake_auto REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(nav2_common REQUIRED)
@@ -12,23 +14,18 @@ find_package(nav2_msgs REQUIRED)
 find_package(nav_2d_utils REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(nav2_waypoint_follower REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(trajectory_generator REQUIRED)
-find_package(trajectory_scorer REQUIRED)
-find_package(trajectory_picker REQUIRED)
 find_package(planning_interfaces REQUIRED)
-find_package(control_interfaces REQUIRED)
-find_package(a_star REQUIRED)
+find_package(smac_planner REQUIRED)
 find_package(Ceres REQUIRED COMPONENTS SuiteSparse)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ompl REQUIRED)
 find_package(OpenMP REQUIRED)
-find_package(smac_planner REQUIRED)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
@@ -49,33 +46,64 @@ if(MSVC)
   add_compile_definitions(_USE_MATH_DEFINES)
 endif()
 
-add_executable(local_planner_manager_node src/local_planner_manager_node.cpp)
-ament_target_dependencies(local_planner_manager_node
+set(library_name a_star_core)
+set(dependencies
   rclcpp
   rclcpp_action
   std_msgs
   nav2_msgs
   nav2_util
   nav2_core
-  trajectory_generator
-  trajectory_scorer
-  trajectory_picker
   planning_interfaces
-  control_interfaces
-  a_star
+  trajectory_generator
+  tf2_ros
   eigen3_cmake_module
-  smac_planner
 )
-target_link_libraries(local_planner_manager_node ${CERES_LIBRARIES} ${OMPL_LIBRARIES} ${OpenMP_LIBRARIES} OpenMP::OpenMP_CXX)
 
-target_include_directories(local_planner_manager_node PUBLIC
+include_directories(include)
+
+add_library(${library_name} SHARED
+  src/a_star.cpp
+)
+
+ament_target_dependencies(${library_name}
+  ${dependencies}
+)
+target_link_libraries(${library_name} ${CERES_LIBRARIES} ${OMPL_LIBRARIES} ${OpenMP_LIBRARIES} OpenMP::OpenMP_CXX)
+target_include_directories(${library_name} PUBLIC ${Eigen3_INCLUDE_DIRS})
+target_compile_definitions(${library_name} PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
+
+
+add_executable(a_star src/a_star_node.cpp)
+ament_target_dependencies(a_star
+  ${dependencies}
+)
+
+target_link_libraries(a_star
+  a_star_core
+)
+target_include_directories(a_star PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
-install(TARGETS local_planner_manager_node
-  DESTINATION lib/${PROJECT_NAME})
+install(TARGETS
+  a_star_core
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
 
-install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
-install(DIRECTORY params DESTINATION share/${PROJECT_NAME})
+install(TARGETS
+  a_star
+  RUNTIME DESTINATION lib/${PROJECT_NAME})
+
+install(DIRECTORY include/
+  DESTINATION include/
+)
+
+ament_export_include_directories(include)
+ament_export_libraries(a_star_core)
+ament_export_dependencies(${dependencies})
+ament_export_definitions("PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 
 ament_package()
