@@ -22,7 +22,6 @@
 #include <smac_planner/types.hpp>
 
 #define DEBUG false
-#define BENCHMARK_TESTING
 
 namespace local_planning {
 class AStar : public TrajectoryGeneratorInterface {

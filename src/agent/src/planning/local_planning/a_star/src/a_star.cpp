@@ -2,6 +2,7 @@
 #include <rclcpp/logging.hpp>
 
 using namespace std::chrono; // NOLINT
+#define BENCHMARK_TESTING
 
 namespace local_planning {
 void AStar::configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
