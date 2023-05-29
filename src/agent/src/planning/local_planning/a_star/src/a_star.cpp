@@ -2,7 +2,6 @@
 #include <rclcpp/logging.hpp>
 
 using namespace std::chrono; // NOLINT
-#define BENCHMARK_TESTING
 
 namespace local_planning {
 void AStar::configure(rclcpp_lifecycle::LifecycleNode::SharedPtr parent,
@@ -193,8 +192,8 @@ nav_msgs::msg::Path AStar::computeTrajectory(
         request->costmap.metadata.origin.position.x,
         request->costmap.metadata.origin.position.y);
     // _a_star->setFootprint(costmap_nav2->getRo, false);
-    p_debugCostMapMsg(&request->costmap);
-    p_debugCostMap(costmap_nav2);
+    // p_debugCostMapMsg(&request->costmap);
+    // p_debugCostMap(costmap_nav2);
 
     try {
         this->fillCostmapFromMsg(costmap_nav2, &request->costmap);
@@ -234,10 +233,9 @@ nav_msgs::msg::Path AStar::computeTrajectory(
     RCLCPP_DEBUG(_logger,
                  "start - mx: [%d] | my: [%d] | orientation_bin_id: [%d]", mx,
                  my, orientation_bin_id);
-    /* set goal location */
-
-    // calc distance from goal to ego so that we can find world->occupancy map
     /**
+     * set goal location
+     * calc distance from goal to ego so that we can find world->occupancy map
      * NOTE: we have reversed the coordinate here due to
      */
     float goal_x = request->next_waypoint.pose.position.y -
@@ -263,17 +261,16 @@ nav_msgs::msg::Path AStar::computeTrajectory(
     }
 
     orientation_bin_id =
-        0; // static_cast<unsigned int>(floor(orientation_bin));
+        0; // static_cast<unsigned int>(floor(orientation_bin)); TODO: figure
+           // out what is orientation bin
 
     RCLCPP_DEBUG(_logger,
                  "goal - mx: [%d] | my: [%d] | orientation_bin_id: [%d]", mx,
                  my, orientation_bin_id);
 
     _a_star->setGoal(mx, my, 0);
-
+    RCLCPP_DEBUG(_logger, "goal set success");
     // Setup message
-    plan_global.header.stamp = _clock->now();
-    plan_global.header.frame_id = _global_frame;
     geometry_msgs::msg::PoseStamped pose;
     pose.header = plan_global.header;
     pose.pose.position.z = 0.0;
@@ -282,11 +279,19 @@ nav_msgs::msg::Path AStar::computeTrajectory(
     pose.pose.orientation.z = 0.0;
     pose.pose.orientation.w = 1.0;
 
+    plan_global.header.stamp = _clock->now();
+    plan_global.header.frame_id = _global_frame;
     // Compute plan
     smac_planner::NodeSE2::CoordinateVector path;
     int num_iterations = 0;
     std::string error;
     try {
+        RCLCPP_DEBUG(_logger, "Trying to create path...");
+        RCLCPP_DEBUG(
+            _logger,
+            "num_iteration: [%d] | tolerance: [%.3f] | resolution: [%.3f]",
+            num_iterations, _tolerance,
+            static_cast<float>(costmap_nav2->getResolution()));
         if (!_a_star->createPath(
                 path, num_iterations,
                 _tolerance /
@@ -300,6 +305,12 @@ nav_msgs::msg::Path AStar::computeTrajectory(
     } catch (const std::runtime_error &e) {
         error = "invalid use: ";
         error += e.what();
+    } catch (...) {
+        p_defaultSolution(&plan_global, &request->next_waypoint,
+                          "unable to fill costmap from costmap message");
+        RCLCPP_WARN(_logger, "%s: failed to create plan due to unknown "
+                             "reasons, using default plan");
+        return plan_global;
     }
 
     if (!error.empty()) {
@@ -307,54 +318,58 @@ nav_msgs::msg::Path AStar::computeTrajectory(
                     error.c_str());
         return plan_global;
     }
+    RCLCPP_DEBUG(_logger, "Plan creation success");
 
-    // Convert to world coordinates and downsample path for smoothing if
+    // Convert to world coordinates and down sample path for smoothing if
     // necesssary We're going to downsample by 4x to give terms room to move.
-    std::vector<Eigen::Vector2d> path_world;
-    nav_msgs::msg::Path plan_ego;
-    plan_ego.header.frame_id = _ego_frame;
+    std::vector<Eigen::Vector2d> path_ego;
 
-    path_world.reserve(path.size());
-    plan_ego.poses.reserve(path.size());
+    path_ego.reserve(path.size());
+    plan_global.poses.reserve(path.size());
     RCLCPP_DEBUG(_logger, "Coordinates on ego vehicle frame");
     for (int i = path.size() - 1; i >= 0; --i) {
-        path_world.push_back(
-            getWorldCoords(path[i].x, path[i].y, costmap_nav2));
-        pose.pose.position.x = path_world.back().x();
-        pose.pose.position.y = path_world.back().y();
+        path_ego.push_back(getWorldCoords(path[i].x, path[i].y, costmap_nav2));
+        pose.pose.position.x =
+            path_ego.back().y() + request->odom.pose.pose.position.x;
+
+        pose.pose.position.y =
+            path_ego.back().x() + request->odom.pose.pose.position.y;
+
         pose.pose.orientation = getWorldOrientation(path[i].theta);
-        plan_ego.poses.push_back(pose);
+        plan_global.poses.push_back(pose);
     }
-    for (size_t i = 0; i < plan_ego.poses.size(); i++) {
+
+    // debug
+    for (size_t i = 0; i < plan_global.poses.size(); i++) {
         RCLCPP_DEBUG(_logger, "i: [%d] | x: [%.3f] | y: [%.3f]", i,
-                     plan_ego.poses[i].pose.position.x,
-                     plan_ego.poses[i].pose.position.y);
+                     plan_global.poses[i].pose.position.x,
+                     plan_global.poses[i].pose.position.y);
     }
 
     // Publish raw path for debug, in ego frame
     if (_raw_plan_publisher->get_subscription_count() > 0) {
+        nav_msgs::msg::Path plan_ego;
+        plan_ego.header.frame_id = _ego_frame;
+
+        for (size_t i = 0; i < plan_global.poses.size(); i++) {
+            std::shared_ptr<geometry_msgs::msg::PoseStamped> ps;
+
+            ps =
+                this->pConvertToEgoFov(plan_global.poses[i].pose, request->odom,
+                                       this->tf_buffer, this->_clock);
+
+            if (ps == nullptr) {
+                break;
+            }
+
+            plan_ego.poses.push_back(*ps.get());
+        }
+
         _raw_plan_publisher->publish(plan_ego);
     }
 
-    // full fill the global frame
-    RCLCPP_DEBUG(_logger, "Coordinates on map frame");
-    for (std::size_t i = 0; i < plan_ego.poses.size(); i++) {
-        geometry_msgs::msg::PoseStamped p_global;
-        /**
-         * Note: we did a transformation back
-         */
-        p_global.pose.position.x = plan_ego.poses[i].pose.position.y +
-                                   request->odom.pose.pose.position.x;
-        p_global.pose.position.y = plan_ego.poses[i].pose.position.x +
-                                   request->odom.pose.pose.position.y;
-
-        RCLCPP_DEBUG(_logger, "i: [%d] | x: [%.3f] | y: [%.3f]", i,
-                     p_global.pose.position.x, p_global.pose.position.y);
-        plan_global.poses.push_back(p_global);
-    }
-
     // If not smoothing or too short to smooth, return path
-    if (!_smoother || path_world.size() < 4) {
+    if (!_smoother || path_ego.size() < 4) {
 #ifdef BENCHMARK_TESTING
         steady_clock::time_point b = steady_clock::now();
         duration<double> time_span = duration_cast<duration<double>>(b - a);
@@ -373,7 +388,7 @@ nav_msgs::msg::Path AStar::computeTrajectory(
         std::min(time_remaining, _optimizer_params.max_time);
 
     // Smooth plan
-    if (!_smoother->smooth(path_world, costmap_nav2, _smoother_params)) {
+    if (!_smoother->smooth(path_ego, costmap_nav2, _smoother_params)) {
         RCLCPP_WARN(_logger,
                     "%s: failed to smooth plan, Ceres could not find a usable "
                     "solution to optimize.",
@@ -382,12 +397,12 @@ nav_msgs::msg::Path AStar::computeTrajectory(
         return plan_global;
     }
 
-    removeHook(path_world);
+    removeHook(path_ego);
 
     // populate final path
-    for (unsigned int i = 0; i != path_world.size(); i++) {
-        pose.pose.position.x = path_world[i][0];
-        pose.pose.position.y = path_world[i][1];
+    for (unsigned int i = 0; i != path_ego.size(); i++) {
+        pose.pose.position.x = path_ego[i][0];
+        pose.pose.position.y = path_ego[i][1];
         plan_global.poses[i] = pose;
     }
     RCLCPP_DEBUG(_logger, "---------------");

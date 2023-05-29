@@ -21,7 +21,8 @@
 #include <smac_planner/constants.hpp>
 #include <smac_planner/types.hpp>
 
-#define DEBUG true
+#define DEBUG false
+#define BENCHMARK_TESTING
 
 namespace local_planning {
 class AStar : public TrajectoryGeneratorInterface {
@@ -180,6 +181,33 @@ class AStar : public TrajectoryGeneratorInterface {
                     reason.c_str());
 
         plan->poses.push_back(*next_waypoint); // default just emit the next
+    }
+
+    geometry_msgs::msg::PoseStamped::SharedPtr
+    pConvertToEgoFov(geometry_msgs::msg::Pose original,
+                     nav_msgs::msg::Odometry odom,
+                     std::shared_ptr<tf2_ros::Buffer> tf_buffer_,
+                     rclcpp::Clock::SharedPtr clock) {
+        geometry_msgs::msg::TransformStamped t;
+        std::string fromFrameRel = odom.header.frame_id;
+        std::string toFrameRel = odom.child_frame_id;
+        try {
+            t = tf_buffer_->lookupTransform(toFrameRel, fromFrameRel,
+                                            tf2::TimePointZero);
+        } catch (const tf2::TransformException &ex) {
+            RCLCPP_WARN(_logger, "Could not transform [%s] to [%s]: [%s]",
+                        toFrameRel.c_str(), fromFrameRel.c_str(), ex.what());
+            return nullptr;
+        }
+        std_msgs::msg::Header header;
+        header.frame_id = toFrameRel;
+        header.stamp = clock->now();
+        geometry_msgs::msg::PoseStamped child_pose;
+        geometry_msgs::msg::PoseStamped ps;
+        ps.header = header;
+        ps.pose = original;
+        tf2::doTransform(ps, child_pose, t);
+        return std::make_shared<geometry_msgs::msg::PoseStamped>(child_pose);
     }
 };
 } // namespace local_planning

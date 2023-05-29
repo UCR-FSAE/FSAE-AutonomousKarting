@@ -66,6 +66,7 @@ nav2_util::CallbackReturn
 TrajectoryGeneratorROS::on_configure(const rclcpp_lifecycle::State &state) {
     RCLCPP_DEBUG(this->get_logger(), "on_configure");
     this->tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*this->tf_buffer);
     auto node = shared_from_this();
 
     for (size_t i = 0; i < this->trajectory_generators.size(); i++) {
