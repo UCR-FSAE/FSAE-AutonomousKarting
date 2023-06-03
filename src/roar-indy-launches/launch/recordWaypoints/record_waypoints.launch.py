@@ -52,7 +52,10 @@ def generate_launch_description():
     # ld.add_action(pointonenav_launch)
 
     # start_navigation = IncludeLaunchDescription(condition=LaunchConfigurationEquals("pointonenav", "true"))
-    ld.add_action(ExecuteProcess(cmd=['curl', '-X', 'POST', 'http://10.0.0.2/api/v1/application/start'],output='screen'))
+    ld.add_action(ExecuteProcess(cmd=['curl', '-X', 'POST', 'http://10.0.0.2/api/v1/application/start'],
+                                 output='screen',
+                                 condition=LaunchConfigurationEquals("pointonenav", "true") 
+                                 ))
 
     deplayed_actions = launch.actions.TimerAction(
         period=5.0,
