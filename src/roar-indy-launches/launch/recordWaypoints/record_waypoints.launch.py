@@ -49,7 +49,21 @@ def generate_launch_description():
             
             condition=LaunchConfigurationEquals("pointonenav", "true")   
     )
-    ld.add_action(pointonenav_launch)
+    # ld.add_action(pointonenav_launch)
+
+    # start_navigation = IncludeLaunchDescription(condition=LaunchConfigurationEquals("pointonenav", "true"))
+    ld.add_action(ExecuteProcess(cmd=['curl', '-X', 'POST', 'http://10.0.0.2/api/v1/application/start'],output='screen'))
+
+    deplayed_actions = launch.actions.TimerAction(
+        period=5.0,
+        actions=[pointonenav_launch],
+        condition=LaunchConfigurationEquals("pointonenav", "true") 
+    )
+    ld.add_action(deplayed_actions)
+    
+    # start_navigation.add_action(ExecuteProcess(cmd=['sleep', '5']))
+    # ld.add_action(start_navigation)          
+
 
     
     """ 
@@ -61,10 +75,9 @@ def generate_launch_description():
     ld.add_action(rosbag_record_dir_args)
 
     ros2_bag_record = ExecuteProcess(cmd=['ros2', 'bag', 'record', f'-o {get_record_dir()}', '-a'],output='screen')
-    print(f"record_dir {record_dir}")
-
+    
+    ld.add_action(LogInfo(msg=f"record_dir: {record_dir} "))
     ld.add_action(ros2_bag_record)
-    print(sys.argv)
     return ld
     
 
