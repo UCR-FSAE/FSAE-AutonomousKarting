@@ -1,6 +1,0 @@
-[submodule "src/simulation"]
-	path = src/simulation
-	url = git@gitlab.com:roar-gokart/simulation.git
-[submodule "src/hardware"]
-	path = src/hardware
-	url = git@gitlab.com:roar-gokart/hardware.git
