@@ -25,10 +25,12 @@ This repo is the parent repo for the ROAR Go-Kart project.
 
 
 - For simulation  
-`vcs import src < simulator.repos`
+`vcs import src < simulation.repos`
 
 - For hardware
-`vcs import src < hardware.repos`
+  - `vcs import src < hardware.repos`
+  - Please cd into the `src/hardware` repo, follow the README.md.
+
 
 
 - Installation
