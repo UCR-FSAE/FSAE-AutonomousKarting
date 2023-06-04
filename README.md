@@ -18,17 +18,21 @@ This repo is the parent repo for the ROAR Go-Kart project.
   - [Optional] To contribute please install commit linters
     - upgrade NodeJS: https://blog.hubspot.com/website/update-node-js
     - Install linter: https://github.com/legend80s/git-commit-msg-linter
-- Installing this repo:
-  - Sample command: ```git submodule update --init --recursive src/simulation/ src/hardware```
-    - For detail: [Stackoverflow](https://stackoverflow.com/questions/16728866/how-to-only-update-specific-git-submodules)
-  - In the `roar-gokart-ws` directory, execute ```colcon build```
-  - remember to source by `source install/setup.bash` for both the ROS2 install AND this repo's. 
 
 
+- For Core: 
+`vcs import src < core.repos`
 
-- For simulation
-  
+
+- For simulation  
 `vcs import src < simulator.repos`
+
+- For hardware
+`vcs import src < hardware.repos`
+
+
+- Installation
+  `colcon build`
 
 - Usage
   - Simulation:
