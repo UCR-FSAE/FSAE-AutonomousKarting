@@ -1,0 +1,5 @@
+repositories:
+  gokart/:
+    type: git
+    url: https://gitlab.com/roar-gokart/hardware.git
+    version: develop
