@@ -34,10 +34,15 @@ This repo is the parent repo for the ROAR Go-Kart project.
 
 
 - Installation
-  `colcon build`
+- `rosdep install --from-paths src --ignore-src -r -y`
+- `colcon build`
 
 - Usage
   - Simulation:
     - `./scripts/launch_simulation_server.sh`
     - `./scripts/launch_simulation_client.sh`
 
+
+# FAQ
+- `rapidjson` not found
+`sudo apt-get install rapidjson-dev`
