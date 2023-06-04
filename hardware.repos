@@ -1,5 +1,5 @@
 repositories:
-  gokart/:
+  hardware:
     type: git
-    url: https://gitlab.com/roar-gokart/hardware.git
+    url: git@gitlab.com:roar-gokart/hardware.git
     version: develop
