@@ -1,5 +1,5 @@
 repositories:
   simulation/carla:
     type: git
-    url: https://gitlab.com/roar-gokart/simulation.git
+    url: git@gitlab.com:roar-gokart/simulation.git
     version: develop
