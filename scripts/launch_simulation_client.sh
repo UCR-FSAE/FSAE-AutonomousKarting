@@ -3,4 +3,4 @@
 # license that can be found in the LICENSE file.
 
 source install/setup.bash
-ros2 launch roar-indy-launches carla_main.launch.py
+ros2 launch roar-indy-launches roar.launch.py manual_control:=True carla:=True
