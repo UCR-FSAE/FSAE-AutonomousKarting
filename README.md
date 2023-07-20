@@ -46,3 +46,21 @@ This repo is the parent repo for the ROAR Go-Kart project.
 # FAQ
 - `rapidjson` not found
 `sudo apt-get install rapidjson-dev`
+
+
+
+## Some quick functions
+1. To record everything in Carla
+```
+ros2 launch roar-indy-launches roar.launch.py manual_control:=True carla:=True record:=True
+```
+2. To record waypoint in Carla
+
+```
+ros2 launch roar-indy-launches roar.launch.py manual_control:=True carla:=True should_record_waypoint:=True
+```
+
+3. to check what options are available
+```
+ros2 launch roar-indy-launches roar.launch.py -s
+```
