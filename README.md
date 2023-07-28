@@ -19,17 +19,17 @@ This repo is the parent repo for the ROAR Go-Kart project.
     - upgrade NodeJS: https://blog.hubspot.com/website/update-node-js
     - Install linter: https://github.com/legend80s/git-commit-msg-linter
 
+- For ROAR launches
+`vcs import src/launches < launches.repos --recursive`
 
 - For Core: 
-`vcs import src < core.repos`
-
+`vcs import src/core < core.repos --recursive`
 
 - For simulation  
-`vcs import src < simulation.repos`
+`vcs import src/simulation < simulation.repos --recursive`
 
 - For hardware
-  - `vcs import src < hardware.repos`
-  - Please cd into the `src/hardware` repo, follow the README.md.
+ `vcs import src/hardware < hardware.repos --recursive`
 
 
 

@@ -3,10 +3,6 @@ repositories:
     type: git
     url: git@gitlab.com:roar-gokart/core.git
     version: develop
-  launches:
-    type: git
-    url: git@gitlab.com:roar-gokart/roar-launches.git
-    version: develop
   navigation2:
     type: git
     url: git@github.com:wuxiaohua1011/navigation2.git
