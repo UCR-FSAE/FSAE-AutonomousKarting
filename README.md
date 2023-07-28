@@ -64,3 +64,16 @@ ros2 launch roar-indy-launches roar.launch.py manual_control:=True carla:=True s
 ```
 ros2 launch roar-indy-launches roar.launch.py -s
 ```
+
+4. Manual control in Carla
+```
+ros2 launch roar-indy-launches roar.launch.py manual_control:=True carla:=True
+```
+5. Auto waypoint following in Carla
+```
+ros2 launch roar-indy-launches roar.launch.py carla:=True core:=True visualization:=True param_file:=./src/launches/launches/config/carla/config.yaml
+```
+Use RQT or use cmd to invoke
+```
+ros2 service call /controller/manager/safety_toggle roar_msgs/srv/ToggleControlSafetySwitch "{is_safety_on: True}"
+```
