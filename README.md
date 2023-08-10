@@ -31,7 +31,7 @@ Assuming you are at `roar-gokart-ws`
 `vcs import src/simulation < repos/simulation.repos --recursive`
 
 - For hardware
- `vcs import src/hardware < repos/gokart.repos --recursive`
+ `vcs import src/gokart < repos/gokart.repos --recursive`
 
 
 
