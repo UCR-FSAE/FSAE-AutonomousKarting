@@ -31,10 +31,6 @@ repositories:
     type: git
     url: git@gitlab.com:roar-gokart/roar_gokart_msgs.git
     version: develop
-  roar_localization:
-    type: git
-    url: git@gitlab.com:roar-gokart/robot_localization.git
-    version: develop
   roar_gokart_interface:
     type: git
     url: git@gitlab.com:roar-gokart/roar_gokart_interface.git
@@ -47,3 +43,8 @@ repositories:
     type: git
     url: git@gitlab.com:roar-gokart/roar_septentrio_interface.git
     version: develop
+  roar_pointone_nav_interface:
+    type: git
+    url: git@gitlab.com:roar-gokart/roar_pointone_nav_interface.git
+    version: main
+  
