@@ -39,3 +39,11 @@ repositories:
     type: git
     url: git@gitlab.com:roar-gokart/roar_gokart_interface.git
     version: develop
+  septentrio_gnss_driver:
+    type: git
+    url: git@gitlab.com:roar-gokart/septentrio_gnss_driver.git
+    version: ros2
+  roar_septentrio_interface:
+    type: git
+    url: git@gitlab.com:roar-gokart/roar_septentrio_interface.git
+    version: develop
