@@ -31,11 +31,19 @@ repositories:
     type: git
     url: git@gitlab.com:roar-gokart/roar_gokart_msgs.git
     version: develop
-  roar_robot_localization:
+  roar_localization:
     type: git
     url: git@gitlab.com:roar-gokart/robot_localization.git
     version: develop
-  gokart_hardware_launches:
+  roar_gokart_interface:
     type: git
-    url: git@gitlab.com:roar-gokart/gokart_hardware_launches.git
+    url: git@gitlab.com:roar-gokart/roar_gokart_interface.git
+    version: develop
+  septentrio_gnss_driver:
+    type: git
+    url: git@gitlab.com:roar-gokart/septentrio_gnss_driver.git
+    version: ros2
+  roar_septentrio_interface:
+    type: git
+    url: git@gitlab.com:roar-gokart/roar_septentrio_interface.git
     version: develop
