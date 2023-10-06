@@ -41,8 +41,8 @@ Assuming you are at `roar-gokart-ws`
 
 - Usage
   - Simulation:
-    - `./scripts/launch_simulation_server.sh`
-    - `./scripts/launch_simulation_client.sh`
+    - `./scripts/carla/launch_simulation_server.sh`
+    - `./scripts/carla/racing/client_auto.sh`
 
 
 # FAQ
