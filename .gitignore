@@ -300,3 +300,8 @@ cython_debug/
 #.idea/
 
 nohup.outsrc/simulation/simulation/carla_scenario_runner/
+
+src/simulation/**
+src/gokart/**
+src/core/**
+
