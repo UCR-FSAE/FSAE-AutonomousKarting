@@ -8,8 +8,8 @@ from subprocess import CalledProcessError
 def migrate_repositories():
     # Define the list of GitLab repository URLs
     gitlab_repo_urls = [
-        "https://gitlab.com/roar-gokart/arduino_comm.git"
         # Add URLs for your other GitLab repositories here
+        "https://gitlab.com/roar-gokart/arduino_comm.git",
     ]
 
     # GitHub repository URL
@@ -31,18 +31,22 @@ def migrate_repositories():
             subprocess.run(["git", "remote", "add", "github",
                            github_repo_url], check=True)
 
+            # subprocess.run()
+
             # Push to GitHub
             subprocess.run(["git", "push", "github", "develop"], check=True)
+
+            print("Migration completed successfully.")
+            return
 
         except (CalledProcessError, GitCommandError) as e:
             print(
                 f"An error occurred during repository '{repo_name}' migration: {str(e)}")
+            print("Migration failed.")
         finally:
             # Change back to the original directory and clean up (delete cloned repo)
             os.chdir("..")
             subprocess.run(["rm", "-rf", repo_name], check=True)
-
-    print("Migration completed successfully.")
 
 
 def main():
