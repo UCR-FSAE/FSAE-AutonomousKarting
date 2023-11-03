@@ -21,6 +21,8 @@ def migrate_repositories():
         repo_name = gitlab_url.split("/")[-1].split(".git")[0]
 
         try:
+            # modify steps as needed
+
             # Clone the GitLab repository
             subprocess.run(["git", "clone", gitlab_url], check=True)
 
