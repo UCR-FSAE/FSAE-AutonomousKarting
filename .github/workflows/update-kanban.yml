@@ -26,7 +26,7 @@ jobs:
 
       - name: Fetch Kanban board and generate HTML
         env:
-          GITHUB_TOKEN: ${{ secrets.KANBAN_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.KANBAN_BOARD }}
         run: |
           python ./.github/workflows/fetchKanban.py  # Replace with the path to Python script that fetches Kanban board data
 
