@@ -2,7 +2,7 @@ name: Update Kanban Board
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes; change this to suit your needs
+    - cron: '*/1440 * * * *'  # Every 1440 minutes; change this to suit your needs
 
 jobs:
   update-board:
