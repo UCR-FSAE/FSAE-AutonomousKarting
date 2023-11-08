@@ -1,32 +1,33 @@
 name: Update Kanban Board
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '*/1440 * * * *'  # Every 1440 minutes; change this to suit your needs
+    # This schedule * * * * * is a cron expression: (minute hour day month weekday)
+    - cron: '*/30 * * * *'  # Every 30 minutes; adjust as needed
 
 jobs:
-  update-board:
+  update_kanban_board:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Fetch Kanban board data
-      run: # Script for fetching kanban data is in ./fetchKanban.py
-        # This is where you would add the script to fetch and generate the HTML
-        # You'll need to use GitHub's API to fetch the project data
-        # And then convert it to an HTML representation
-        echo "This is where the board fetching and HTML generation will go"
-    
-    - name: Push to gh-pages
-      run: |
-        # After generating the HTML, you would configure git and push to the gh-pages branch
-        git config --global user.name 'GitHub Action'
-        git config --global user.email 'action@github.com'
-        git add .
-        git commit -m 'Update Kanban board'
-        git push origin gh-pages
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
 
-# need more stuff
-# Script for making static HTML page
-# Script for fetching kanban board data
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Fetch Kanban board and generate HTML
+        env:
+          GITHUB_TOKEN: ${{ secrets.KANBAN_TOKEN }}
+        run: |
+          python ./fetchKanban.py  # Replace with the path to Python script that fetches Kanban board data
+
+      # Add additional steps to commit and push the generated HTML file to your repository
