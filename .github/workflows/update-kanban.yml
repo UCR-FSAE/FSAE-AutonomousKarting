@@ -28,6 +28,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.KANBAN_TOKEN }}
         run: |
-          python ./fetchKanban.py  # Replace with the path to Python script that fetches Kanban board data
+          python ./.github/workflows/fetchKanban.py  # Replace with the path to Python script that fetches Kanban board data
 
       # Add additional steps to commit and push the generated HTML file to your repository
