@@ -2,30 +2,30 @@ name: Update Kanban Board
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Every 15 minutes; change this to suit your needs
+    - cron: "*/1440 * * * *" # Every 1 day; change this to suit your needs
 
 jobs:
   update-board:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Fetch Kanban board data
-      run: # Script for fetching kanban data is in ./fetchKanban.py
-        # This is where you would add the script to fetch and generate the HTML
-        # You'll need to use GitHub's API to fetch the project data
-        # And then convert it to an HTML representation
-        echo "This is where the board fetching and HTML generation will go"
-    
-    - name: Push to gh-pages
-      run: |
-        # After generating the HTML, you would configure git and push to the gh-pages branch
-        git config --global user.name 'GitHub Action'
-        git config --global user.email 'action@github.com'
-        git add .
-        git commit -m 'Update Kanban board'
-        git push origin gh-pages
+      - name: Fetch Kanban board data
+        run: # Script for fetching kanban data is in ./fetchKanban.py
+          # This is where you would add the script to fetch and generate the HTML
+          # You'll need to use GitHub's API to fetch the project data
+          # And then convert it to an HTML representation
+          echo "This is where the board fetching and HTML generation will go"
+
+      - name: Push to gh-pages
+        run: |
+          # After generating the HTML, you would configure git and push to the gh-pages branch
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add .
+          git commit -m 'Update Kanban board'
+          git push origin gh-pages
 
 # need more stuff
 # Script for making static HTML page
