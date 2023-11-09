@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # This schedule * * * * * is a cron expression: (minute hour day month weekday)
-    - cron: '*/30 * * * *'  # Every 30 minutes; adjust as needed
+    - cron: '*/1440 * * * *'  # Every 30 minutes; adjust as needed
 
 jobs:
   update_kanban_board:
