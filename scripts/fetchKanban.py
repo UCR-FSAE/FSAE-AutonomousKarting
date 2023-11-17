@@ -4,9 +4,9 @@ import requests
 import json
 import os
 
-# You'll need to obtain a personal access token from GitHub and set it as an environment variable.
-# WARNING: Personal access tokens should be kept secret!
-# In a GitHub action, you would set this as a secret and use it as an environment variable.
+# Obtain a personal access token from GitHub and add it in the repository's Secrets (under Actions).
+# !!WARNING: Personal access tokens should be kept secret!!
+# In GitHub action, you would set this as a secret and use it as an environment variable.
 
 # Get the GitHub token from the environment variable
 # github_token = os.environ['GITHUB_TOKEN'] 
@@ -19,7 +19,6 @@ headers = {
 }
 
 # The URL for the GitHub project's API endpoint
-# You will need to modify this URL to match your project's API endpoint
 project_url = 'https://api.github.com/projects/8'
 
 # Make a GET request to the GitHub API to fetch the project board data
